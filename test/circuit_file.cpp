@@ -16,9 +16,9 @@ int main(int argc, char** argv) {
 	setup_semi_honest(io, party);
 
 #ifdef MEM
-	Integer a(2, 128, ALICE);
-	Integer b(3, 128, ALICE);
-	Integer c(1, 128, PUBLIC);
+	Integer a(128, 2, ALICE);
+	Integer b(128, 3, ALICE);
+	Integer c(128, 1, PUBLIC);
 
 	MemIO * memio = new MemIO(cf.table_size());
 	if(party == ALICE)
@@ -39,9 +39,9 @@ int main(int argc, char** argv) {
 	io->set_nodelay();
 	io->sync();
 	double t1 = wallClock();
-	Integer a(2, 128, ALICE);
-	Integer b(3, 128, BOB);
-	Integer c(1, 128, PUBLIC);
+	Integer a(128, 2, ALICE);
+	Integer b(128, 3, BOB);
+	Integer c(128, 1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
 			cf.compute((block*)c.bits, (block*)a.bits, (block*)b.bits);
 	}

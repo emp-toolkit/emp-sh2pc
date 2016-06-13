@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 
 	setup_semi_honest(io, party);
 
-//	scratch_pad();return 0;
+	scratch_pad();return 0;
 	test_int<std::plus<int>, std::plus<Integer>>(party);
 	test_int<std::minus<int>, std::minus<Integer>>(party);
 	test_int<std::multiplies<int>, std::multiplies<Integer>>(party);
