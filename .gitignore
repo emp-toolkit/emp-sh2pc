@@ -1,3 +1,8 @@
+CMakeCache.txt
+CMakeFiles/
+Makefile
+bin/
+cmake_install.cmake
 # Compiled Object files
 *.slo
 *.lo
@@ -15,7 +20,6 @@
 
 # Fortran module files
 *.mod
-*.smod
 
 # Compiled Static libraries
 *.lai
