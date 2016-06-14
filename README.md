@@ -24,5 +24,10 @@
   IP address is hardcoded in the test files. Please replace
   SERVER_IP variable to the real ip.
 
+* example_semi_honest should run as 
+	`./bin/example_semi_honest 1 12345 123 & ./bin/example_semi_honest 2 12345 124`
+	
+	because different parrties needs different numbers
+
 ### Question
 Please send email to wangxiao@cs.umd.edu

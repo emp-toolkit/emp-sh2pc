@@ -17,9 +17,12 @@ void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100)
 			ia %= range1;
 			ib %= range2;
 		}
+	
 		Integer a(32, ia, ALICE); 
 		Integer b(32, ib, BOB);
+
 		Integer res = Op2()(a,b);
+
 		if (res.reveal<int>(PUBLIC) != Op()(ia,ib)) {
 			cout << ia <<"\t"<<ib<<"\t"<<Op()(ia,ib)<<"\t"<<res.reveal<int>(PUBLIC)<<endl<<flush;
 		}
@@ -41,7 +44,7 @@ int main(int argc, char** argv) {
 
 	setup_semi_honest(io, party);
 
-	scratch_pad();return 0;
+//	scratch_pad();return 0;
 	test_int<std::plus<int>, std::plus<Integer>>(party);
 	test_int<std::minus<int>, std::minus<Integer>>(party);
 	test_int<std::multiplies<int>, std::multiplies<Integer>>(party);

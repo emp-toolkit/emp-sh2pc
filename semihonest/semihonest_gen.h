@@ -27,7 +27,6 @@ class SemiHonestGen: public Backend { public:
 	~SemiHonestGen() {
 		delete ot;
 	}
-
 };
 
 template<typename T>

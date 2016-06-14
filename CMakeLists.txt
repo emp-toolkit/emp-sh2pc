@@ -2,8 +2,6 @@ cmake_minimum_required (VERSION 2.8.11)
 project (emp-sh2pc)
 
 include_directories(${CMAKE_SOURCE_DIR})
-#include_directories(lib/relic/include lib/relic/include/low lib/libgarble/src)
-#include_directories(lib/libgarble/src)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
@@ -16,7 +14,7 @@ FIND_PACKAGE(OpenSSL)
 INCLUDE_DIRECTORIES(${OPENSSL_INCLUDE_DIR})
 
 set (CMAKE_C_FLAGS "-pthread -Wall -march=native -O3 -maes")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg -ggdb")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg -ggdb")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++0x")
 
 macro (add_test _name)
