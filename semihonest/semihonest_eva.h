@@ -12,10 +12,12 @@ void eval_reveal(Backend* be, bool* clear, int party, const block * label, int l
 template<typename T>
 class SemiHonestEva: public Backend { public:
 	NetIO* io;
-	SHOTExtension* ot;
+	SHOTExtension * ot;
+//	OTIdeal* ot;
 	HalfGateEva<T> * gc;
 	SemiHonestEva(NetIO*io, HalfGateEva<T> * gc): Backend(BOB) {
 		this->io = io;
+//		ot = new OTIdeal(io);//SHOTExtension(io);
 		ot = new SHOTExtension(io);
 		this->gc = gc;	
 		Feed_internal = eval_feed<T>;

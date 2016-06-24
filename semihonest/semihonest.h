@@ -1,5 +1,5 @@
-#include "semihonest/semihonest_gen.h"
-#include "semihonest/semihonest_eva.h"
+#include "semihonest_gen.h"
+#include "semihonest_eva.h"
 
 static void setup_semi_honest(NetIO* io, int party) {
 	if(party == ALICE) {

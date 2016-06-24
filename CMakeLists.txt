@@ -1,7 +1,8 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (emp-sh2pc)
-
+set(NAME "emp-sh2pc")
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/semihonest)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
@@ -44,3 +45,11 @@ add_test (float)
 add_test (circuit_file)
 
 add_example (semi_honest)
+
+install(FILES emp-sh2pc-config.cmake DESTINATION cmake/)
+
+file(GLOB  headers 
+"semihonest/*.h"
+"emp-sh2pc.h"
+)
+install(FILES ${headers}  DESTINATION include/${NAME})

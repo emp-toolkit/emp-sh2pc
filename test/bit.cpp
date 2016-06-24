@@ -1,4 +1,4 @@
-#include "semihonest/semihonest.h"
+#include "semihonest.h"
 #include <emp-tool/emp-tool.h>
 
 void test_bit(int party) {
