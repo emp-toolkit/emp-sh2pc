@@ -12,14 +12,12 @@ void gen_reveal(Backend* be, bool* clear, int party, const block * label, int le
 template<typename T>
 class SemiHonestGen: public Backend { public:
 	NetIO* io;
-	SHOTExtension * ot;
-//	OTIdeal* ot;
+	OTIterated * ot;
 	PRG prg;
 	HalfGateGen<T> * gc;
 	SemiHonestGen(NetIO* io, HalfGateGen<T>* gc): Backend(ALICE) {
 		this->io = io;
-//		ot = new OTIdeal(io);
-		ot = new SHOTExtension(io);
+		ot = new OTIterated(io, true);
 
 		this->gc = gc;	
 		Feed_internal = gen_feed<T>;
