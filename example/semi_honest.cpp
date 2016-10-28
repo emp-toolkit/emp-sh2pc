@@ -1,8 +1,7 @@
 #include "semihonest/semihonest.h"
 #include <emp-tool/emp-tool.h>
-#include <NTL/ZZ.h>
+
 void test_millionare(int party, int number) {
-	NTL::ZZ p;
 	Integer a(32, number, ALICE);
 	Integer b(32, number, BOB);
 
