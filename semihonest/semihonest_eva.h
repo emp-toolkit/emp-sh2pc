@@ -12,11 +12,11 @@ void eval_reveal(Backend* be, bool* clear, int party, const block * label, int l
 template<typename T>
 class SemiHonestEva: public Backend { public:
 	NetIO* io;
-	OTIterated* ot;
+	SHOTIterated* ot;
 	HalfGateEva<T> * gc;
 	SemiHonestEva(NetIO*io, HalfGateEva<T> * gc): Backend(BOB) {
 		this->io = io;
-		ot = new OTIterated(io, false);
+		ot = new SHOTIterated(io, false);
 		this->gc = gc;	
 		Feed_internal = eval_feed<T>;
 		Reveal_internal = eval_reveal<T>;
@@ -33,7 +33,7 @@ void eval_feed(Backend* be, int party, block * label, const bool* b, int length)
 	if(party == ALICE) {
 		backend->io->recv_block(label, length);
 	} else {
-		backend->ot->recv(label, b, length);
+		backend->ot->recv_cot(label, b, length);
 	}
 }
 

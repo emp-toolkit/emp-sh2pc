@@ -30,7 +30,7 @@ endmacro()
 
 macro (add_example _name)
 	add_executable("example_${_name}" "example/${_name}.cpp" ${basics})
-	target_link_libraries("example_${_name}"  relic  ${OPENSSL_LIBRARIES} gmp ${EMP-TOOL_LIBRARIES}) 
+	target_link_libraries("example_${_name}"  relic  ${OPENSSL_LIBRARIES} gmp ${EMP-TOOL_LIBRARIES} ntl m) 
 endmacro()
 
 

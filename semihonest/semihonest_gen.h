@@ -12,12 +12,12 @@ void gen_reveal(Backend* be, bool* clear, int party, const block * label, int le
 template<typename T>
 class SemiHonestGen: public Backend { public:
 	NetIO* io;
-	OTIterated * ot;
+	SHOTIterated * ot;
 	PRG prg;
 	HalfGateGen<T> * gc;
 	SemiHonestGen(NetIO* io, HalfGateGen<T>* gc): Backend(ALICE) {
 		this->io = io;
-		ot = new OTIterated(io, true);
+		ot = new SHOTIterated(io, true);
 
 		this->gc = gc;	
 		Feed_internal = gen_feed<T>;
@@ -40,13 +40,13 @@ void gen_feed(Backend* be, int party, block * label, const bool* b, int length) 
 			backend->io->send_block(&tosend, 1);
 		}
 	} else {
-		block * bk = new block[length];
-		backend->prg.random_block(label, length);
-		for(int i = 0; i < length; ++i) {
-			bk[i] = xorBlocks(label[i], backend->gc->delta);
-		}
-		backend->ot->send(label, bk, length);
-		delete[] bk;
+//		block * bk = new block[length];
+//		backend->prg.random_block(label, length);
+//		for(int i = 0; i < length; ++i) {
+//			bk[i] = xorBlocks(label[i], backend->gc->delta);
+//		}
+		backend->ot->send_cot(label, backend->gc->delta, length);
+//		delete[] bk;
 	}
 }
 
