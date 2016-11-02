@@ -40,13 +40,7 @@ void gen_feed(Backend* be, int party, block * label, const bool* b, int length) 
 			backend->io->send_block(&tosend, 1);
 		}
 	} else {
-//		block * bk = new block[length];
-//		backend->prg.random_block(label, length);
-//		for(int i = 0; i < length; ++i) {
-//			bk[i] = xorBlocks(label[i], backend->gc->delta);
-//		}
 		backend->ot->send_cot(label, backend->gc->delta, length);
-//		delete[] bk;
 	}
 }
 
