@@ -8,14 +8,11 @@ set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} cmake/)
 
-FIND_PACKAGE(emp-ot)
+find_package(emp-ot REQUIRED)
 INCLUDE_DIRECTORIES(${EMP-OT_INCLUDE_DIRS})
 
-FIND_PACKAGE(OpenSSL)
-INCLUDE_DIRECTORIES(${OPENSSL_INCLUDE_DIR})
-
 set (CMAKE_C_FLAGS "-pthread -Wall -march=native -O3 -maes")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg -ggdb")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg -ggdb")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++0x")
 
 macro (add_test _name)
