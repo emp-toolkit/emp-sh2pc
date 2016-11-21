@@ -1,5 +1,5 @@
 #include "semihonest.h"
-#include <emp-tool/emp-tool.h>
+#include <emp-tool>
 
 void test_bit(int party) {
 	bool b[] = {true, false};

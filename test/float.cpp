@@ -1,6 +1,6 @@
 #include <typeinfo>
 #include "semihonest/semihonest.h"
-#include <emp-tool/emp-tool.h>
+#include <emp-tool>
 
 void test_float(int party) {
 	Float a(24, 9, 0.11);
