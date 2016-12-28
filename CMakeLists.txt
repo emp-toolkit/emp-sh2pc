@@ -48,5 +48,6 @@ install(FILES emp-sh2pc-config.cmake DESTINATION cmake/)
 file(GLOB  headers 
 "semihonest/*.h"
 "emp-sh2pc.h"
+"emp-sh2pc"
 )
 install(FILES ${headers}  DESTINATION include/${NAME})
