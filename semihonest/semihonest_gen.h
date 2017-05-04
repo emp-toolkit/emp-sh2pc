@@ -4,34 +4,32 @@
 #include <emp-ot>
 #include <iostream>
 
-template<typename T>
+template<typename IO>
 void gen_feed(Backend* be, int party, block * label, const bool*, int length);
-template<typename T>
+template<typename IO>
 void gen_reveal(Backend* be, bool* clear, int party, const block * label, int length);
 
-template<typename T>
+template<typename IO>
 class SemiHonestGen: public Backend { public:
-	NetIO* io;
-	SHOTIterated * ot;
+	IO* io;
+	SHOTIterated<IO> * ot;
 	PRG prg;
-	HalfGateGen<T> * gc;
-	SemiHonestGen(NetIO* io, HalfGateGen<T>* gc): Backend(ALICE) {
+	HalfGateGen<IO> * gc;
+	SemiHonestGen(IO* io, HalfGateGen<IO>* gc): Backend(ALICE) {
 		this->io = io;
-		ot = new SHOTIterated(io, true);
-
+		ot = new SHOTIterated<IO>(io, true);
 		this->gc = gc;	
-		Feed_internal = gen_feed<T>;
-		Reveal_internal = gen_reveal<T>;
+		Feed_internal = gen_feed<IO>;
+		Reveal_internal = gen_reveal<IO>;
 	}
-
 	~SemiHonestGen() {
 		delete ot;
 	}
 };
 
-template<typename T>
+template<typename IO>
 void gen_feed(Backend* be, int party, block * label, const bool* b, int length) {
-	SemiHonestGen<T> * backend = (SemiHonestGen<T>*)(be);
+	SemiHonestGen<IO> * backend = (SemiHonestGen<IO>*)(be);
 	if(party == ALICE) {
 		backend->prg.random_block(label, length);
 		for (int i = 0; i < length; ++i) {
@@ -44,9 +42,9 @@ void gen_feed(Backend* be, int party, block * label, const bool* b, int length) 
 	}
 }
 
-template<typename T>
+template<typename IO>
 void gen_reveal(Backend* be, bool* b, int party, const block * label, int length) {
-	SemiHonestGen<T> * backend = (SemiHonestGen<T>*)(be);
+	SemiHonestGen<IO> * backend = (SemiHonestGen<IO>*)(be);
 	for (int i = 0; i < length; ++i) {
 		if(isOne(&label[i]))
 			b[i] = true;

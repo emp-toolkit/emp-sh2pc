@@ -1,13 +1,14 @@
 #include "semihonest_gen.h"
 #include "semihonest_eva.h"
 
-static void setup_semi_honest(NetIO* io, int party) {
+template<typename IO>
+static void setup_semi_honest(IO* io, int party) {
 	if(party == ALICE) {
-		local_gc = new HalfGateGen<NetIO>(io);
-		local_backend = new SemiHonestGen<NetIO>(io, (HalfGateGen<NetIO, RTCktOpt::on>*)local_gc);
+		local_gc = new HalfGateGen<IO>(io);
+		local_backend = new SemiHonestGen<IO>(io, (HalfGateGen<IO, RTCktOpt::on>*)local_gc);
 	} else {
-		local_gc = new HalfGateEva<NetIO>(io);
-		local_backend = new SemiHonestEva<NetIO>(io, (HalfGateEva<NetIO, RTCktOpt::on>*)local_gc);
+		local_gc = new HalfGateEva<IO>(io);
+		local_backend = new SemiHonestEva<IO>(io, (HalfGateEva<IO, RTCktOpt::on>*)local_gc);
 	}
 }
 

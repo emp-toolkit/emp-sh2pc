@@ -4,22 +4,22 @@
 #include <emp-ot>
 #include <iostream>
 
-template<typename T>
+template<typename IO>
 void eval_feed(Backend* be, int party, block * label, const bool*, int length);
-template<typename T>
+template<typename IO>
 void eval_reveal(Backend* be, bool* clear, int party, const block * label, int length);
 
-template<typename T>
+template<typename IO>
 class SemiHonestEva: public Backend { public:
-	NetIO* io;
-	SHOTIterated* ot;
-	HalfGateEva<T> * gc;
-	SemiHonestEva(NetIO*io, HalfGateEva<T> * gc): Backend(BOB) {
+	IO* io = nullptr;
+	SHOTIterated<IO>* ot;
+	HalfGateEva<IO> * gc;
+	SemiHonestEva(IO *io, HalfGateEva<IO> * gc): Backend(BOB) {
 		this->io = io;
-		ot = new SHOTIterated(io, false);
+		ot = new SHOTIterated<IO>(io, false);
 		this->gc = gc;	
-		Feed_internal = eval_feed<T>;
-		Reveal_internal = eval_reveal<T>;
+		Feed_internal = eval_feed<IO>;
+		Reveal_internal = eval_reveal<IO>;
 	}
 	~SemiHonestEva() {
 		delete ot;
@@ -27,9 +27,9 @@ class SemiHonestEva: public Backend { public:
 };
 
 
-template<typename T>
+template<typename IO>
 void eval_feed(Backend* be, int party, block * label, const bool* b, int length) {
-	SemiHonestEva<T> * backend = (SemiHonestEva<T>*)(be);
+	SemiHonestEva<IO> * backend = (SemiHonestEva<IO>*)(be);
 	if(party == ALICE) {
 		backend->io->recv_block(label, length);
 	} else {
@@ -37,9 +37,9 @@ void eval_feed(Backend* be, int party, block * label, const bool* b, int length)
 	}
 }
 
-template<typename T>
+template<typename IO>
 void eval_reveal(Backend* be, bool * b, int party, const block * label, int length) {
-	SemiHonestEva<T> * backend = (SemiHonestEva<T>*)(be);
+	SemiHonestEva<IO> * backend = (SemiHonestEva<IO>*)(be);
 	block tmp;
 	for (int i = 0; i < length; ++i) {
 		if(isOne(&label[i]))
