@@ -28,3 +28,6 @@ addons:
 
 script:
   - cmake -DCMAKE_BUILD_TYPE=Debug . && make 
+  - ./run ./bin/bit 12345
+  - ./run ./bin/int 12345
+  - ./run ./bin/float 12345

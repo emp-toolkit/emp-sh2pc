@@ -17,8 +17,8 @@ INCLUDE_DIRECTORIES(${EMP-OT_INCLUDE_DIRS})
 
 
 macro (add_test _name)
-	add_executable("test_${_name}" "test/${_name}.cpp" ${basics})
-	target_link_libraries("test_${_name}" ${EMP-OT_LIBRARIES}) 
+	add_executable("${_name}" "test/${_name}.cpp" ${basics})
+	target_link_libraries("${_name}" ${EMP-OT_LIBRARIES}) 
 endmacro()
 
 install(FILES emp-sh2pc-config.cmake DESTINATION cmake/)
@@ -32,5 +32,4 @@ add_test (bit)
 add_test (int)
 add_test (float)
 add_test (circuit_file)
-add_test (semi_honest)
-
+add_test (example)
