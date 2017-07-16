@@ -1,4 +1,4 @@
-# emp-sh2pc
+# emp-sh2pc[![Build Status](https://travis-ci.org/emp-toolkit/emp-sh2pc.svg?branch=master)](https://travis-ci.org/emp-toolkit/emp-sh2pc)
 
 <img src="https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/art/logo-full.jpg" width=300px/>
 
@@ -25,7 +25,7 @@
   SERVER_IP variable to the real ip.
 
 * example_semi_honest should run as 
-	`./bin/example_semi_honest 1 12345 123 & ./bin/example_semi_honest 2 12345 124`
+	`./bin/example 1 12345 123 & ./bin/example 2 12345 124`
 	
 	because different parrties needs different numbers
 
