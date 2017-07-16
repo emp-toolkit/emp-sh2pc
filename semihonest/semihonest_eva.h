@@ -12,11 +12,11 @@ void eval_reveal(Backend* be, bool* clear, int party, const block * label, int l
 template<typename IO>
 class SemiHonestEva: public Backend { public:
 	IO* io = nullptr;
-	SHOTIterated<IO>* ot;
+	SHOTExtension<IO>* ot;
 	HalfGateEva<IO> * gc;
 	SemiHonestEva(IO *io, HalfGateEva<IO> * gc): Backend(BOB) {
 		this->io = io;
-		ot = new SHOTIterated<IO>(io, false);
+		ot = new SHOTExtension<IO>(io);
 		this->gc = gc;	
 		Feed_internal = eval_feed<IO>;
 		Reveal_internal = eval_reveal<IO>;

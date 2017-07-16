@@ -12,12 +12,12 @@ void gen_reveal(Backend* be, bool* clear, int party, const block * label, int le
 template<typename IO>
 class SemiHonestGen: public Backend { public:
 	IO* io;
-	SHOTIterated<IO> * ot;
+	SHOTExtension<IO> * ot;
 	PRG prg;
 	HalfGateGen<IO> * gc;
 	SemiHonestGen(IO* io, HalfGateGen<IO>* gc): Backend(ALICE) {
 		this->io = io;
-		ot = new SHOTIterated<IO>(io, true);
+		ot = new SHOTExtension<IO>(io);
 		this->gc = gc;	
 		Feed_internal = gen_feed<IO>;
 		Reveal_internal = gen_reveal<IO>;
