@@ -13,7 +13,7 @@ template<typename IO>
 class SemiHonestGen: public Backend { public:
 	IO* io;
 	SHOTExtension<IO> * ot;
-	PRG prg;
+	PRG prg, shared_prg;
 	HalfGateGen<IO> * gc;
 	SemiHonestGen(IO* io, HalfGateGen<IO>* gc): Backend(ALICE) {
 		this->io = io;
@@ -21,6 +21,9 @@ class SemiHonestGen: public Backend { public:
 		this->gc = gc;	
 		Feed_internal = gen_feed<IO>;
 		Reveal_internal = gen_reveal<IO>;
+		block seed;prg.random_block(&seed, 1);
+		io->send_block(&seed, 1);
+		shared_prg.reseed(&seed);
 	}
 	~SemiHonestGen() {
 		delete ot;
@@ -31,11 +34,10 @@ template<typename IO>
 void gen_feed(Backend* be, int party, block * label, const bool* b, int length) {
 	SemiHonestGen<IO> * backend = (SemiHonestGen<IO>*)(be);
 	if(party == ALICE) {
-		backend->prg.random_block(label, length);
+		backend->shared_prg.random_block(label, length);
 		for (int i = 0; i < length; ++i) {
-			block tosend = label[i];
-			if(b[i]) tosend = xorBlocks(tosend, backend->gc->delta);
-			backend->io->send_block(&tosend, 1);
+			if(b[i])
+				label[i] = xorBlocks(label[i], backend->gc->delta);
 		}
 	} else {
 		backend->ot->send_cot(label, backend->gc->delta, length);

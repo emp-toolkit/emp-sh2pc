@@ -14,12 +14,15 @@ class SemiHonestEva: public Backend { public:
 	IO* io = nullptr;
 	SHOTExtension<IO>* ot;
 	HalfGateEva<IO> * gc;
+	PRG shared_prg;
 	SemiHonestEva(IO *io, HalfGateEva<IO> * gc): Backend(BOB) {
 		this->io = io;
 		ot = new SHOTExtension<IO>(io);
 		this->gc = gc;	
 		Feed_internal = eval_feed<IO>;
 		Reveal_internal = eval_reveal<IO>;
+		block seed; io->recv_block(&seed, 1);
+		shared_prg.reseed(&seed);
 	}
 	~SemiHonestEva() {
 		delete ot;
@@ -31,7 +34,7 @@ template<typename IO>
 void eval_feed(Backend* be, int party, block * label, const bool* b, int length) {
 	SemiHonestEva<IO> * backend = (SemiHonestEva<IO>*)(be);
 	if(party == ALICE) {
-		backend->io->recv_block(label, length);
+		backend->shared_prg.random_block(label, length);
 	} else {
 		backend->ot->recv_cot(label, b, length);
 	}
