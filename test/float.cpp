@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 	PRG prg;
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
-	NetIO * io = new NetIO(party==ALICE ? nullptr : SERVER_IP, port);
+	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 	setup_semi_honest(io, party);
 //	scratch_pad();return 0;
 	test_float<std::plus<float>, std::plus<Float>>(1e-4);

@@ -33,7 +33,7 @@ void test_sort(int party) {
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
-	NetIO * io = new NetIO(party==ALICE ? nullptr : SERVER_IP, port);
+	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
 	test_millionare(party, atoi(argv[3]));
