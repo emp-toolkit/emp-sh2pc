@@ -22,8 +22,8 @@ set(CMAKE_BUILD_TYPE Release)
 endif(NOT CMAKE_BUILD_TYPE)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-find_package(emp-ot)
-INCLUDE_DIRECTORIES(${EMP-OT_INCLUDE_DIRS})
+find_package(emp-ot REQUIRED)
+include_directories(${EMP-OT_INCLUDE_DIRS})
 
 
 macro (add_test _name)
