@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (emp-sh2pc)
 set(NAME "emp-sh2pc")
+
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW) # use rpath on macOS
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/semihonest)
 
