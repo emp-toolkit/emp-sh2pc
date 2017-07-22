@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (emp-sh2pc)
 set(NAME "emp-sh2pc")
+
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW) # use rpath on macOS
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/semihonest)
 
@@ -17,8 +22,8 @@ set(CMAKE_BUILD_TYPE Release)
 endif(NOT CMAKE_BUILD_TYPE)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-find_package(emp-ot)
-INCLUDE_DIRECTORIES(${EMP-OT_INCLUDE_DIRS})
+find_package(emp-ot REQUIRED)
+include_directories(${EMP-OT_INCLUDE_DIRS})
 
 
 macro (add_test _name)
