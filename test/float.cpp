@@ -1,6 +1,5 @@
 #include <typeinfo>
-#include "semihonest/semihonest.h"
-#include <emp-tool>
+#include "emp-sh2pc/emp-sh2pc.h"
 
 bool accurate(double a, double b, double err) {
 	if (fabs(a - b) < err*a and fabs(a - b) < err*b)

@@ -1,5 +1,4 @@
-#include "semihonest.h"
-#include <emp-tool>
+#include "emp-sh2pc/emp-sh2pc.h"
 void test_bit() {
 	bool b[] = {true, false};
 	int p[] = {PUBLIC, ALICE, BOB};
