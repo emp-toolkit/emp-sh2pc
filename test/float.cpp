@@ -1,15 +1,14 @@
 #include <typeinfo>
-#include "semihonest/semihonest.h"
-#include <emp-tool>
+#include "emp-sh2pc/emp-sh2pc.h"
 
 bool accurate(double a, double b, double err) {
 	if (fabs(a - b) < err*a and fabs(a - b) < err*b)
 		return true;
 	else return false;
 }
-PRG prg;
 template<typename Op, typename Op2>
 void test_float(double precision, int runs = 100) {
+	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
 		int64_t ia, ib;
 		prg.random_data(&ia, 8);

@@ -1,7 +1,7 @@
 #ifndef SEMIHONEST_GEN_H__
 #define SEMIHONEST_GEN_H__
-#include <emp-tool>
-#include <emp-ot>
+#include <emp-tool/emp-tool.h>
+#include <emp-ot/emp-ot.h>
 #include <iostream>
 
 template<typename IO>

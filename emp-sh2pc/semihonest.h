@@ -1,5 +1,5 @@
-#include "semihonest_gen.h"
-#include "semihonest_eva.h"
+#include "emp-sh2pc/semihonest_gen.h"
+#include "emp-sh2pc/semihonest_eva.h"
 
 template<typename IO>
 static void setup_semi_honest(IO* io, int party) {

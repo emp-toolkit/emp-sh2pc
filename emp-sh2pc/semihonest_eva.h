@@ -1,8 +1,7 @@
 #ifndef SEMIHONEST_EVA_H__
 #define SEMIHONEST_EVA_H__
-#include <emp-tool>
-#include <emp-ot>
-#include <iostream>
+#include <emp-tool/emp-tool.h>
+#include <emp-ot/emp-ot.h>
 
 template<typename IO>
 void eval_feed(Backend* be, int party, block * label, const bool*, int length);

@@ -1,6 +1,5 @@
 #include <typeinfo>
-#include "semihonest/semihonest.h"
-#include <emp-tool>
+#include "emp-sh2pc/emp-sh2pc.h"
 
 template<typename Op, typename Op2>
 void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100) {
