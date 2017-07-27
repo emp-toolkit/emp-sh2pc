@@ -6,9 +6,9 @@ bool accurate(double a, double b, double err) {
 		return true;
 	else return false;
 }
-PRG prg;
 template<typename Op, typename Op2>
 void test_float(double precision, int runs = 100) {
+	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
 		int64_t ia, ib;
 		prg.random_data(&ia, 8);
