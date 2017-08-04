@@ -1,7 +1,7 @@
 #include <typeinfo>
 #include "emp-sh2pc/emp-sh2pc.h"
 
-template<typename Op, typename Op2>
+template<template T, typename Op, typename Op2>
 void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100) {
 	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
@@ -17,7 +17,7 @@ void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100)
 			ib %= range2;
 		}
 	
-		Integer a(32, ia, ALICE); 
+		Integer<T> a(32, ia, ALICE); 
 		Integer b(32, ib, BOB);
 
 		Integer res = Op2()(a,b);

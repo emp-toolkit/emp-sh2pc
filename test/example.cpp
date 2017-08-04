@@ -1,32 +1,34 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 
+template<typename T>
 void test_millionare(int party, int number) {
-	Integer a(32, number, ALICE);
-	Integer b(32, number, BOB);
+	Integer<T> a(32, party == ALICE? number : 0, ALICE);
+	Integer<T> b(32, party == BOB? number : 0, BOB);
 
-	cout << "ALICE Input:\t"<<a.reveal<int>()<<endl;
-	cout << "BOB Input:\t"<<b.reveal<int>()<<endl;
-	cout << "ALICE larger?\t"<< (a>b).reveal<bool>()<<endl;
+	cout << "ALICE Input:\t"<<a.reveal()<<endl;
+	cout << "BOB Input:\t"<<b.reveal()<<endl;
+	cout << "ALICE larger?\t"<< (a>b).reveal()<<endl;
 }
 
+template<typename T>
 void test_sort(int party) {
 	int size = 10;
 	Batcher batcher1, batcher2;
-	Integer *A = new Integer[size];
+	Integer<T> *A = new Integer<T>[size];
 	for(int i = 0; i < size; ++i) {
-		batcher1.add<Integer>(32, rand()%1024);
-		batcher2.add<Integer>(32, rand()%1024);
+		batcher1.add<Integer<T>>(32, party == ALICE? rand()%1024 : 0);
+		batcher2.add<Integer<T>>(32, party == BOB? rand()%1024 : 0 );
 	}
 
 	batcher1.make_semi_honest(ALICE);
 	batcher2.make_semi_honest(BOB);
 
 	for(int i = 0; i < size; ++i)
-		A[i] = batcher1.next<Integer>() ^ batcher2.next<Integer>();
+		A[i] = batcher1.next<Integer<T>>() ^ batcher2.next<Integer<T>>();
 
 	sort(A, size);
 	for(int i = 0; i < size; ++i)
-		cout << A[i].reveal<string>()<<endl;
+		cout << A[i].reveal()<<endl;
 }
 
 int main(int argc, char** argv) {
@@ -35,7 +37,7 @@ int main(int argc, char** argv) {
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
-	test_millionare(party, atoi(argv[3]));
-	test_sort(party);
+//	test_millionare(party, atoi(argv[3]));
+//	test_sort(party);
 	delete io;
 }
