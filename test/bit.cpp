@@ -55,7 +55,7 @@ void test_bit() {
 					{
 						Bit b1(b[i], p[j]);
 						Bit b2(b[k], p[l]);
-						bool res = (b1^b2).reveal(XOR);
+						bool res = (b1^b2).reveal(EMP_XOR);
 						if(party == ALICE) {
 							io->send_data(&res, 1);
 						} else {
