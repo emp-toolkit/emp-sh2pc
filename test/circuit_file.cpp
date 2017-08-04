@@ -5,16 +5,15 @@ int port, party;
 string file = circuit_file_location+"/AES-non-expanded.txt";//adder_32bit.txt";
 CircuitFile cf(file.c_str());
 
-template<typename T>
 void test() {
 	auto start = clock_start();
-	Integer<T> a(128, 2, ALICE);
-	Integer<T> b(128, 3, BOB);
-	Integer<T> c(128, 1, PUBLIC);
+	Integer a(128, 2, ALICE);
+	Integer b(128, 3, BOB);
+	Integer c(128, 1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
-			cf.compute<T>((block*)c.bits, (block*)a.bits, (block*)b.bits);
+			cf.compute((block*)c.bits, (block*)a.bits, (block*)b.bits);
 	}
-	cout << time_from(start)<<" "<<party<<" "<<c.reveal(BOB)<<endl;
+	cout << time_from(start)<<" "<<party<<" "<<c.reveal<string>(BOB)<<endl;
 
 }
 int main(int argc, char** argv) {
@@ -22,10 +21,7 @@ int main(int argc, char** argv) {
 	NetIO* io = new NetIO(party==ALICE?nullptr:"127.0.0.1", port);
 
 	setup_semi_honest(io, party);
-	if (party == ALICE)
-		test<HalfGateGen<NetIO>>();
-	else
-		test<HalfGateEva<NetIO>>();
+	test();
 	
 	delete io;
 }

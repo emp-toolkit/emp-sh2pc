@@ -1,7 +1,7 @@
 #include <typeinfo>
 #include "emp-sh2pc/emp-sh2pc.h"
 
-template<template T, typename Op, typename Op2>
+template<typename Op, typename Op2>
 void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100) {
 	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
@@ -17,7 +17,7 @@ void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100)
 			ib %= range2;
 		}
 	
-		Integer<T> a(32, ia, ALICE); 
+		Integer a(32, ia, ALICE); 
 		Integer b(32, ib, BOB);
 
 		Integer res = Op2()(a,b);
@@ -34,7 +34,6 @@ void scratch_pad() {
 	Integer a(32, 9, ALICE);
 	cout << "HW "<<a.hamming_weight().reveal<string>(PUBLIC)<<endl;
 	cout << "LZ "<<a.leading_zeros().reveal<string>(PUBLIC)<<endl;
-	cout << local_gc->gid<<endl;
 }
 int main(int argc, char** argv) {
 	int port, party;

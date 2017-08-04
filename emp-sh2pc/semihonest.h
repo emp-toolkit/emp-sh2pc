@@ -4,11 +4,13 @@
 template<typename IO>
 static void setup_semi_honest(IO* io, int party) {
 	if(party == ALICE) {
-		HalfGateGen<IO>::circ_exec = new HalfGateGen<IO>(io);
-		ProtocolExecution::prot_exec = new SemiHonestGen<IO>(io, HalfGateGen<IO>::circ_exec);
+		HalfGateGen<IO> * t = new HalfGateGen<IO>(io);
+		CircuitExecution::circ_exec = t;
+		ProtocolExecution::prot_exec = new SemiHonestGen<IO>(io, t);
 	} else {
-		HalfGateEva<IO>::circ_exec = new HalfGateEva<IO>(io);
-		ProtocolExecution::prot_exec = new SemiHonestEva<IO>(io, HalfGateEva<IO>::circ_exec);
+		HalfGateEva<IO> * t = new HalfGateEva<IO>(io);
+		CircuitExecution::circ_exec = t;
+		ProtocolExecution::prot_exec = new SemiHonestEva<IO>(io, t);
 	}
 }
 
