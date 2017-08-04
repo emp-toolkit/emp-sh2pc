@@ -1,8 +1,10 @@
+#ifndef SEMIHONEST_H__
+#define SEMIHONEST_H__
 #include "emp-sh2pc/semihonest_gen.h"
 #include "emp-sh2pc/semihonest_eva.h"
 
 template<typename IO>
-static void setup_semi_honest(IO* io, int party) {
+inline void setup_semi_honest(IO* io, int party) {
 	if(party == ALICE) {
 		HalfGateGen<IO> * t = new HalfGateGen<IO>(io);
 		CircuitExecution::circ_exec = t;
@@ -13,4 +15,4 @@ static void setup_semi_honest(IO* io, int party) {
 		ProtocolExecution::prot_exec = new SemiHonestEva<IO>(io, t);
 	}
 }
-
+#endif
