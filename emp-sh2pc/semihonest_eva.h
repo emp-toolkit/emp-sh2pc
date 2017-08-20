@@ -3,6 +3,7 @@
 #include <emp-tool/emp-tool.h>
 #include <emp-ot/emp-ot.h>
 
+namespace emp {
 template<typename IO>
 class SemiHonestEva: public ProtocolExecution {
 public:
@@ -62,6 +63,6 @@ public:
 	}
 
 };
-
+}
 
 #endif// GARBLE_CIRCUIT_SEMIHONEST_H__

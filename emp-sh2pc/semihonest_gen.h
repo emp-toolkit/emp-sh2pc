@@ -4,6 +4,7 @@
 #include <emp-ot/emp-ot.h>
 #include <iostream>
 
+namespace emp {
 template<typename IO>
 class SemiHonestGen: public ProtocolExecution {
 public:
@@ -65,5 +66,5 @@ public:
 			io->recv_data(b, length);
 	}
 };
-
+}
 #endif //SEMIHONEST_GEN_H__

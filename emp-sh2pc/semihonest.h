@@ -3,6 +3,7 @@
 #include "emp-sh2pc/semihonest_gen.h"
 #include "emp-sh2pc/semihonest_eva.h"
 
+namespace emp {
 template<typename IO>
 inline void setup_semi_honest(IO* io, int party) {
 	if(party == ALICE) {
@@ -14,5 +15,6 @@ inline void setup_semi_honest(IO* io, int party) {
 		CircuitExecution::circ_exec = t;
 		ProtocolExecution::prot_exec = new SemiHonestEva<IO>(io, t);
 	}
+}
 }
 #endif
