@@ -1,4 +1,5 @@
 #include "emp-sh2pc/emp-sh2pc.h"
+using namespace emp;
 NetIO * io;
 int party;
 
@@ -55,7 +56,7 @@ void test_bit() {
 					{
 						Bit b1(b[i], p[j]);
 						Bit b2(b[k], p[l]);
-						bool res = (b1^b2).reveal(EMP_XOR);
+						bool res = (b1^b2).reveal(XOR);
 						if(party == ALICE) {
 							io->send_data(&res, 1);
 						} else {
