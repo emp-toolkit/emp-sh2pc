@@ -1,5 +1,6 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
+using namespace std;
 
 void test_millionare(int party, int number) {
 	Integer a(32, number, ALICE);

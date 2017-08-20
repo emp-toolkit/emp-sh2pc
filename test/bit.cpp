@@ -1,5 +1,6 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
+using namespace std;
 NetIO * io;
 int party;
 

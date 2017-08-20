@@ -1,5 +1,6 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
+using namespace std;
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
 int port, party;

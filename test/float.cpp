@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
+using namespace std;
 
 bool accurate(double a, double b, double err) {
 	if (fabs(a - b) < err*a and fabs(a - b) < err*b)
