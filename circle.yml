@@ -1,0 +1,18 @@
+machine:
+  xcode:
+    version: 9.0
+
+checkout:
+  post:
+   - git clone https://github.com/weikengchen/emp-readme.git
+   - bash ./emp-readme/scripts/install_packages.sh
+   - bash ./emp-readme/scripts/install_relic.sh
+   - bash ./emp-readme/scripts/install_emp-tool.sh  
+   - bash ./emp-readme/scripts/install_emp-ot.sh
+
+test: 
+  override:
+   - cmake -DUSE_RANDOM_DEVICE=ON -DCMAKE_BUILD_TYPE=Debug . && make 
+   - ./run ./bin/bit 12345
+   - ./run ./bin/int 12345
+   - ./run ./bin/float 12345
