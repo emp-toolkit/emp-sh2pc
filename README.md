@@ -31,3 +31,6 @@
 
 ### Question
 Please send email to wangxiao@cs.umd.edu
+
+## Acknowledgement
+This work was supported in part by the National Science Foundation under Awards #1111599 and #1563722.
