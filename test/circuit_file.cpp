@@ -12,9 +12,9 @@ void test() {
 	Integer a(128, 2, ALICE);
 	Integer b(128, 3, BOB);
 	Integer c(128, 1, PUBLIC);
-	for(int i = 0; i < 10000; ++i) {
+// 	for(int i = 0; i < 10000; ++i) {
 			cf.compute((block*)c.bits, (block*)a.bits, (block*)b.bits);
-	}
+// 	}
 	cout << time_from(start)<<" "<<party<<" "<<c.reveal<string>(BOB)<<endl;
 
 }
