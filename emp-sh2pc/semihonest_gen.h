@@ -52,13 +52,14 @@ public:
 			else if (isZero(&label[i]))
 				b[i] = false;
 			else {
+				bool lsb = getLSB(label[i]);
 				if (party == BOB or party == PUBLIC) {
-					io->send_block(&label[i], 1);
+					io->send_data(&lsb, 1);
 					b[i] = false;
 				} else if(party == ALICE) {
-					block tmp;
-					io->recv_block(&tmp, 1);
-					b[i] = !(block_cmp(&tmp, &label[i], 1));
+					bool tmp;
+					io->recv_data(&tmp, 1);
+					b[i] = (tmp != lsb);
 				}
 			}
 		}

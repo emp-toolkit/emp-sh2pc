@@ -48,12 +48,12 @@ public:
 			else if (isZero(&label[i]))
 				b[i] = false;
 			else {
-				block tmp;
+				bool lsb = getLSB(label[i]), tmp;
 				if (party == BOB or party == PUBLIC) {
-					io->recv_block(&tmp, 1);
-					b[i] = !(block_cmp(&tmp, &label[i], 1));
+					io->recv_data(&tmp, 1);
+					b[i] = (tmp != lsb);
 				} else if (party == ALICE) {
-					io->send_block(&label[i], 1);
+					io->send_data(&lsb, 1);
 					b[i] = false;
 				}
 			}
