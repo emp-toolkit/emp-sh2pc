@@ -628,10 +628,17 @@ int main(int argc, char** argv) {
 
   	int port, party;
 	parse_party_and_port(argv, &party, &port);
+
+//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
+
 	setup_semi_honest(io, party);
-    testInput((char*)"abcdefghabcdefghabcdefghabcdefgh", 32);
+
+  testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
+             (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
+
+//  testInput((char*)"abcdefghabcdefghabcdefghabcdefgh", 32);
 
 	// test_millionare(party, atoi(argv[3]));
 	// test_sort(party);
@@ -653,8 +660,6 @@ int main(int argc, char** argv) {
   //   //testHmac((char*) input, num, (char*) input, num);
   //   // testInput(input, len);
   // }
-//  testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
-            //  (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
   
    //testHmac(allChars, 512, allChars, 512);
    // testInput((char*)"0", 1);

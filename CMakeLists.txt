@@ -19,11 +19,17 @@ macro (add_test _name)
 	add_test_with_lib(${_name} ${EMP-OT_LIBRARIES})
 endmacro()
 
-#add_test (bit)
+add_test (bit)
 #add_test (int)
 #add_test (float)
 #add_test (circuit_file)
-#add_test (example)
+add_test (example)
 add_test (gc-sha)
-#add_test (sha256)
-#target_link_libraries(sha256 libcryptopp.a)
+
+
+find_library(CRYPTOPP_LIBRARIES NAMES cryptopp libcryptopp )
+MESSAGE(STATUS "CryptoPP libs: " ${CRYPTOPP_LIBRARIES} )
+add_test (sha256)
+
+
+target_link_libraries(sha256 ${CRYPTOPP_LIBRARIES})
