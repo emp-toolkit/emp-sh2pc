@@ -548,6 +548,7 @@ void test_known_vector2() {
   boost::algorithm::to_lower(expected);
   boost::algorithm::to_lower(actual);
 
+  cout << actual << endl;
   assert ( expected.compare(actual) == 0);
   assert ( expected.compare("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1") == 0 );
 }
@@ -666,6 +667,8 @@ string run_secure_sha256(string msg, uint blocks, Version test_type) {
   return res;
 }
 
+
+
 int main(int argc, char** argv) {
   // run in semihonest library
   int port, party;
@@ -674,7 +677,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   parse_party_and_port(argv, &party, &port);
-  NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
+  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port);
 
   setup_semi_honest(io, party);
 
@@ -687,11 +690,11 @@ int main(int argc, char** argv) {
 
   // // run end-to-end tests
   // test_end_to_end();  
-  string msg = "abcdbcdecdefdefgefghfghighijhijk";
-  string actual = run_secure_sha256(msg, 1, SEC1);
+  // string msg = "abcdbcdecdefdefgefghfghighijhijk";
+  // string actual = run_secure_sha256(msg, 1, SEC1);
 
 
-//   // test_known_vector2();
+  test_known_vector2();
 // finalize_plain_prot();  
 
   delete io;

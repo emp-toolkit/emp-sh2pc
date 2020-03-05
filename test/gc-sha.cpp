@@ -626,17 +626,39 @@ void testHmac(char* message, int message_length, char* key, int key_length) {
 
 int main(int argc, char** argv) {
 
-  	int port, party;
+  static int BITMASK_LENGTH = 32;
+  
+  int port, party;
 	parse_party_and_port(argv, &party, &port);
 
-//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
-	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
+  char* inputVal = argv[3];
+	int inputLength = atoi(argv[4]);
+	bool* inputBits = new bool[inputLength * 8 + BITMASK_LENGTH * 8];
 
+  for (int i = 0; i < inputLength; i++) {
+		bitset<8> x(inputVal[i]);
+		for(int j = 0; j < 8; j++) {
+			inputBits[i*8 + j] = x.test(j);
+		}
+	}
+
+  cout << "Full input bits: \n";
+	for (int i = 0; i < inputLength * 8; i++) {
+		cout << inputBits[i];
+	}
+  cout << endl;
+
+
+//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
+	// NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port);
+	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
 
-  testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
-             (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
+  testHmac(inputVal, 64, (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
+
+  // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
+  //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
 
 //  testInput((char*)"abcdefghabcdefghabcdefghabcdefgh", 32);
 
