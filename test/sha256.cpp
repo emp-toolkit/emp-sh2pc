@@ -678,13 +678,21 @@ int main(int argc, char** argv) {
 
   setup_semi_honest(io, party);
 
-  // run unit tests
-  test_components(party);
-  test_sigmas(party);
-  test_compose();
+    // setup_plain_prot(true, "sha256.circuit.txt");
 
-  // run end-to-end tests
-  test_end_to_end();  
+  // // run unit tests
+  // test_components(party);
+  // test_sigmas(party);
+  // test_compose();
+
+  // // run end-to-end tests
+  // test_end_to_end();  
+  string msg = "abcdbcdecdefdefgefghfghighijhijk";
+  string actual = run_secure_sha256(msg, 1, SEC1);
+
+
+//   // test_known_vector2();
+// finalize_plain_prot();  
 
   delete io;
   return 0;
