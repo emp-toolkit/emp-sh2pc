@@ -583,46 +583,72 @@ void testInput(char* str, int length) {
   
 }
 
-// message is comprised of the message input to hmac concatenated with a bitmask
-// key is comprised of the key and a placeholder bitmask that is unused (since inputs must be of equal sizes for now)
+// // message is comprised of the message input to hmac concatenated with a bitmask
+// // key is comprised of the key and a placeholder bitmask that is unused (since inputs must be of equal sizes for now)
+// void testHmac(char* message, int message_length, char* key, int key_length) {
+//   /* HMAC test */
+//   int actualKeyLength = key_length - BITMASK_LENGTH;
+//   int actualMessageLength = message_length - BITMASK_LENGTH;
+//   Integer intMsg[actualMessageLength];
+//   Integer intKey[actualKeyLength];
+//   Integer bitmask[BITMASK_LENGTH];
+//   Integer padding[BITMASK_LENGTH];
+//   Integer* mask = bitmask;
+//   // Need to get BOB's input first :-/
+//   for (int i = 0; i < actualKeyLength; i++) {
+//     intKey[i] = Integer(8, key[i], BOB);
+//   }
+//   for (int i = 0; i < BITMASK_LENGTH; i++) {
+//     padding[i] = Integer(8, key[i + message_length - BITMASK_LENGTH], BOB);
+//   }
+//   for (int i = 0; i < actualMessageLength; i++) {
+//     intMsg[i] = Integer(8, message[i], ALICE);
+//   }
+//   for (int i = 0; i < BITMASK_LENGTH; i++) {
+//     bitmask[i] = Integer(8, message[i + key_length - BITMASK_LENGTH], ALICE);
+//   }
+  
+//   Integer digest_buf[SHA256HashSize];
+//   Integer* digest = digest_buf;
+//   EMP_HMAC_Context context;
+//   HMAC_Reset(&context, intKey, actualKeyLength);
+//   HMAC_Input(&context, intMsg, message_length - BITMASK_LENGTH);
+//   HMAC_Result(&context, digest);
+//   //printHash(digest);
+//   revealOutput(digest, mask);
+//   // printIntegerArray(digest, SHA256HashSize, 8);
+
+//   // uint8_t result[SHA256HashSize];
+//   // HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
+//   // compareHash(result, digest);
+// }
+
 void testHmac(char* message, int message_length, char* key, int key_length) {
   /* HMAC test */
-  int actualKeyLength = key_length - BITMASK_LENGTH;
-  int actualMessageLength = message_length - BITMASK_LENGTH;
-  Integer intMsg[actualMessageLength];
-  Integer intKey[actualKeyLength];
-  Integer bitmask[BITMASK_LENGTH];
-  Integer padding[BITMASK_LENGTH];
-  Integer* mask = bitmask;
-  // Need to get BOB's input first :-/
-  for (int i = 0; i < actualKeyLength; i++) {
-    intKey[i] = Integer(8, key[i], BOB);
-  }
-  for (int i = 0; i < BITMASK_LENGTH; i++) {
-    padding[i] = Integer(8, key[i + message_length - BITMASK_LENGTH], BOB);
-  }
-  for (int i = 0; i < actualMessageLength; i++) {
+  Integer intMsg[message_length];
+  for (int i = 0; i < message_length; i++) {
     intMsg[i] = Integer(8, message[i], ALICE);
   }
-  for (int i = 0; i < BITMASK_LENGTH; i++) {
-    bitmask[i] = Integer(8, message[i + key_length - BITMASK_LENGTH], ALICE);
+  Integer intKey[key_length];
+  for (int i = 0; i < key_length; i++) {
+    intKey[i] = Integer(8, key[i], BOB);
   }
-  
   Integer digest_buf[SHA256HashSize];
   Integer* digest = digest_buf;
   EMP_HMAC_Context context;
-  HMAC_Reset(&context, intKey, actualKeyLength);
-  HMAC_Input(&context, intMsg, message_length - BITMASK_LENGTH);
+  HMAC_Reset(&context, intKey, key_length);
+  HMAC_Input(&context, intMsg, message_length);
   HMAC_Result(&context, digest);
-  //printHash(digest);
-  revealOutput(digest, mask);
+  printHash(digest);
   // printIntegerArray(digest, SHA256HashSize, 8);
 
-  // uint8_t result[SHA256HashSize];
-  // HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
-  // compareHash(result, digest);
+  cout << "KEY: " << key << endl;
+  cout << "MSG: " << message << endl;
+  uint8_t result[SHA256HashSize];
+  
+  HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
+  compareHash(result, digest);
 }
-
 
 int main(int argc, char** argv) {
 
@@ -650,43 +676,15 @@ int main(int argc, char** argv) {
 
 
 //	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
-	// NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port);
+	// NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
 
-  testHmac(inputVal, 64, (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
+  testHmac(inputVal, 32, inputVal, 32);
 
   // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
   //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
 
-//  testInput((char*)"abcdefghabcdefghabcdefghabcdefgh", 32);
-
-	// test_millionare(party, atoi(argv[3]));
-	// test_sort(party);
 	delete io;
-
-//   char allChars[512];
-//  for (int thisChar = 0; thisChar < 512; thisChar++) {
- //   allChars[thisChar] = thisChar%256;
- // }
-  // testInput((char*)"Hello, world!", 12);
-  //  testInput(allChars, 256);
-
-  // int num = 32;
-  // for (int len = num; len <= num; len++) {
-  //   char input[len];
-  //   for (int j = 0; j < len; j++) {
-  //     input[j] = '1';
-  //   }
-  //   //testHmac((char*) input, num, (char*) input, num);
-  //   // testInput(input, len);
-  // }
-  
-   //testHmac(allChars, 512, allChars, 512);
-   // testInput((char*)"0", 1);
-
-   // testInput(allChars, 512);
-
-
 }
