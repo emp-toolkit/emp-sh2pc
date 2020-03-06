@@ -545,15 +545,22 @@ void printSSLHash(uint8_t* sslHash, int arraySize) {
 
 bool compareHash(uint8_t* sslHash, Integer* empHash) {
   for (int i =0; i < SHA256HashSize; i++) {
+
+    cout << "enters here? :" << i << endl;
+    cout << "HASH SIZE :" << SHA256HashSize << endl;
     bitset<8> sslBitset(sslHash[i]);
     for (int j = 7; j >= 0; j--) {
+      cout << "j equals :" << j << endl;
+      //cout << empHash[i][j].reveal() << endl;
+      cout << sslBitset[j] << endl;
       if(empHash[i][j].reveal() != sslBitset[j]) {
+        cout << endl << "FALSE" << endl;
         return false;
       }
     }
     cout <<  sslBitset << ", ";
   }
-  cout << endl << "TRUE?" << endl;
+  cout << endl << "TRUE" << endl;
   return true;
 }
 
@@ -623,8 +630,9 @@ void testInput(char* str, int length) {
 //   // compareHash(result, digest);
 // }
 
-void testHmac(char* message, int message_length, char* key, int key_length) {
+Integer* runHmac(char* message, int message_length, char* key, int key_length) {
   /* HMAC test */
+  
   Integer intMsg[message_length];
   for (int i = 0; i < message_length; i++) {
     intMsg[i] = Integer(8, message[i], ALICE);
@@ -640,14 +648,37 @@ void testHmac(char* message, int message_length, char* key, int key_length) {
   HMAC_Input(&context, intMsg, message_length);
   HMAC_Result(&context, digest);
   printHash(digest);
+
+  return digest;
   // printIntegerArray(digest, SHA256HashSize, 8);
 
-  cout << "KEY: " << key << endl;
-  cout << "MSG: " << message << endl;
-  uint8_t result[SHA256HashSize];
+  // cout << "KEY: " << key << endl;
+  // cout << "MSG: " << message << endl;
+
+  // uint8_t result[SHA256HashSize];
   
-  HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
-  compareHash(result, digest);
+  // HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
+  // compareHash(result, digest);
+}
+
+
+void testHmac() {
+  //char* key = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+  //char* message = "Hi There";
+  char* key = (char*)"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+  char* message = (char*)"Hi ThereHi ThereHi ThereHi There";
+  //uint8_t* output = (uint8_t*)"66d964249c39b37228034e549a66466ffc1848522fc01075c289655ed4f91ee7";
+  uint8_t result[SHA256HashSize];
+  HMAC(EVP_sha256(), key, 32, (const unsigned char*)message, 32, result, NULL);
+  Integer* digest = runHmac(message,32, key,32);
+
+
+  cout << "gets here" << endl;
+  bool check = compareHash(result,digest);
+  cout << "gets past comparehash" << endl;
+  assert(compareHash(result,digest) == true);
+
+  //assert(output == HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL)); 
 }
 
 int main(int argc, char** argv) {
@@ -659,29 +690,14 @@ int main(int argc, char** argv) {
 
   char* inputVal = argv[3];
 	int inputLength = atoi(argv[4]);
-	bool* inputBits = new bool[inputLength * 8 + BITMASK_LENGTH * 8];
-
-  for (int i = 0; i < inputLength; i++) {
-		bitset<8> x(inputVal[i]);
-		for(int j = 0; j < 8; j++) {
-			inputBits[i*8 + j] = x.test(j);
-		}
-	}
-
-  cout << "Full input bits: \n";
-	for (int i = 0; i < inputLength * 8; i++) {
-		cout << inputBits[i];
-	}
-  cout << endl;
-
-
 //	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
-	// NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
+//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
 
-  testHmac(inputVal, 32, inputVal, 32);
+  //testHmac(inputVal, inputLength, inputVal, 32);
+  runHmac();
 
   // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
   //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
