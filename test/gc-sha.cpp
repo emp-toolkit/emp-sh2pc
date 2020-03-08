@@ -546,21 +546,21 @@ void printSSLHash(uint8_t* sslHash, int arraySize) {
 bool compareHash(uint8_t* sslHash, Integer* empHash) {
   for (int i =0; i < SHA256HashSize; i++) {
 
-    cout << "enters here? :" << i << endl;
-    cout << "HASH SIZE :" << SHA256HashSize << endl;
+    //cout << "enters here? :" << i << endl;
+    //cout << "HASH SIZE :" << SHA256HashSize << endl;
     bitset<8> sslBitset(sslHash[i]);
     for (int j = 7; j >= 0; j--) {
-      cout << "j equals :" << j << endl;
+      //cout << "j equals :" << j << endl;
       //cout << empHash[i][j].reveal() << endl;
-      cout << sslBitset[j] << endl;
+      //cout << sslBitset[j] << endl;
       if(empHash[i][j].reveal() != sslBitset[j]) {
-        cout << endl << "FALSE" << endl;
+        //cout << endl << "FALSE" << endl;
         return false;
       }
     }
-    cout <<  sslBitset << ", ";
+    //cout <<  sslBitset << ", ";
   }
-  cout << endl << "TRUE" << endl;
+  //cout << endl << "TRUE" << endl;
   return true;
 }
 
@@ -641,7 +641,7 @@ Integer* runHmac(char* message, int message_length, char* key, int key_length) {
   for (int i = 0; i < key_length; i++) {
     intKey[i] = Integer(8, key[i], BOB);
   }
-  Integer digest_buf[SHA256HashSize];
+  static Integer digest_buf[SHA256HashSize];
   Integer* digest = digest_buf;
   EMP_HMAC_Context context;
   HMAC_Reset(&context, intKey, key_length);
@@ -649,7 +649,11 @@ Integer* runHmac(char* message, int message_length, char* key, int key_length) {
   HMAC_Result(&context, digest);
   printHash(digest);
 
-  return digest;
+  Integer* digest_ptr = new Integer(); 
+  digest_ptr = digest;
+
+  //compareHash(result, digest);
+  return digest_ptr;
   // printIntegerArray(digest, SHA256HashSize, 8);
 
   // cout << "KEY: " << key << endl;
@@ -658,26 +662,29 @@ Integer* runHmac(char* message, int message_length, char* key, int key_length) {
   // uint8_t result[SHA256HashSize];
   
   // HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL);
-  // compareHash(result, digest);
+
 }
 
 
 void testHmac() {
   //char* key = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
   //char* message = "Hi There";
-  char* key = (char*)"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
-  char* message = (char*)"Hi ThereHi ThereHi ThereHi There";
+  string key_str = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+  string message_str = "Hi ThereHi ThereHi ThereHi There";
+  char* key = const_cast<char*>(key_str.c_str());
+  char* message = const_cast<char*>(message_str.c_str());
+  //char* key = (char*)"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
+  //char* message = (char*)"Hi ThereHi ThereHi ThereHi There";
   //uint8_t* output = (uint8_t*)"66d964249c39b37228034e549a66466ffc1848522fc01075c289655ed4f91ee7";
   uint8_t result[SHA256HashSize];
   HMAC(EVP_sha256(), key, 32, (const unsigned char*)message, 32, result, NULL);
   Integer* digest = runHmac(message,32, key,32);
-
-
-  cout << "gets here" << endl;
-  bool check = compareHash(result,digest);
-  cout << "gets past comparehash" << endl;
+  //cout << "printing digest" << endl;
+  //printHash(digest);
+  //cout << "gets here" << endl;
+  //bool check = compareHash(result,digest);
+  //cout << "gets past comparehash" << endl;
   assert(compareHash(result,digest) == true);
-
   //assert(output == HMAC(EVP_sha256(), key, key_length, (const unsigned char*)message, message_length, result, NULL)); 
 }
 
@@ -696,8 +703,8 @@ int main(int argc, char** argv) {
 
 	setup_semi_honest(io, party);
 
-  //testHmac(inputVal, inputLength, inputVal, 32);
-  runHmac();
+  //runHmac(inputVal, inputLength, inputVal, 32);
+  testHmac();
 
   // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
   //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
