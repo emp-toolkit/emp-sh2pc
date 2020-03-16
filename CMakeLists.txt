@@ -24,7 +24,8 @@ add_test (bit)
 #add_test (float)
 #add_test (circuit_file)
 add_test (example)
-add_test (gc-sha)
+#add_test (gc-sha)
+add_test(update)
 
 
 find_library(CRYPTOPP_LIBRARIES NAMES cryptopp libcryptopp )

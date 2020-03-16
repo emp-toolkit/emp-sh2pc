@@ -710,8 +710,10 @@ int main(int argc, char** argv) {
   static int SN_LENGTH = 12; 
   static int CID_LENGTH = 4;
   static int DATA_LENGTH = SN_LENGTH + CID_LENGTH;
-  static int KEY_LENGTH = 64; 
-  static int RANDOM_LENGTH = 32; 
+  static int KEY_LENGTH = 32; 
+  static int RANDOM_LENGTH = 96; 
+  static int RPRIME_LENGTH = 32;
+  static int TOKEN_LENGTH = 1;
   
   int port, party;
   parse_party_and_port(argv, &party, &port);
@@ -724,14 +726,15 @@ int main(int argc, char** argv) {
 
 //  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
 //  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
-  NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
+//  NetIO * io = new NetIO(party==ALICE ? nullptr : "192.168.0.153", port);
+NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
   setup_semi_honest(io, party);
 
   Integer k_reconstruct[KEY_LENGTH];
   Integer p_reconstruct[DATA_LENGTH];
   Integer r_reconstruct[RANDOM_LENGTH];
-  Integer rprime_reconstruct[RANDOM_LENGTH];
+  Integer rprime_reconstruct[RPRIME_LENGTH];
 
   for (int i = 0; i < KEY_LENGTH; i++) {
     k_reconstruct[i] = Integer(8, k_share[i], PUBLIC);
@@ -743,7 +746,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < RANDOM_LENGTH; i++) {
     r_reconstruct[i] = Integer(8, r[i], PUBLIC);
   }
-  for (int i = 0; i < RANDOM_LENGTH; i++) {
+  for (int i = 0; i < RPRIME_LENGTH; i++) {
     rprime_reconstruct[i] = Integer(8, r[i], PUBLIC);
   }
 
@@ -751,11 +754,12 @@ int main(int argc, char** argv) {
   xor_reconstruct(k_share,k_share,KEY_LENGTH, k_reconstruct); 
   xor_reconstruct(p,p,DATA_LENGTH, p_reconstruct); 
   xor_reconstruct(r,r,RANDOM_LENGTH, r_reconstruct);
-  xor_reconstruct(rprime,rprime,RANDOM_LENGTH, rprime_reconstruct);
+  xor_reconstruct(rprime,rprime,RPRIME_LENGTH, rprime_reconstruct);
 
   // parsing IDs from Data 
   Integer sn[SN_LENGTH + 1];
-  Integer cid[CID_LENGTH];
+  Integer cid[32];
+  Integer token[TOKEN_LENGTH];
 
   for (int i = 0; i < SN_LENGTH; i++) {
     sn[i] = p_reconstruct[i];
@@ -770,14 +774,70 @@ int main(int argc, char** argv) {
   for (int i = SN_LENGTH; i < DATA_LENGTH; i++) {
     cid[i - SN_LENGTH] = p_reconstruct[i];
   }
-  //sn[SN_LENGTH] = Integer(8,"1",PUBLIC);
+  for (int i = CID_LENGTH; i < 32; i++) {
+    cid[i] = Integer(8,'\0',PUBLIC);
+  }
 
-  cout << "p reconstruct array" << endl; 
-  printIntegerArray(k_reconstruct,DATA_LENGTH,8);
+  token[0] = Integer(8,'1',PUBLIC);
+
+  cout << "r reconstruct array" << endl; 
+  printIntegerArray(r_reconstruct,RANDOM_LENGTH,8);
   cout << "sn array" << endl; 
   printIntegerArray(sn,SN_LENGTH+1,8);
 
-  Integer* digest = runHmac(k_reconstruct,KEY_LENGTH,sn,SN_LENGTH + 1);
+  Integer* label_key = runHmac(k_reconstruct,KEY_LENGTH,sn,SN_LENGTH + 1);
+  Integer* label = runHmac(label_key,KEY_LENGTH,token,TOKEN_LENGTH);
+
+  sn[SN_LENGTH] = Integer(8,'2',PUBLIC);
+  Integer* value_key = runHmac(k_reconstruct,KEY_LENGTH,sn,SN_LENGTH + 1);
+  Integer* hmac_key = runHmac(value_key,KEY_LENGTH,rprime_reconstruct,RPRIME_LENGTH);
+
+  //xor padded cid with hmac_key 
+  Integer ciphertext[32];
+  for (int i = 0; i < 32; i++) {
+    ciphertext[i] = hmac_key[i] ^ cid[i];
+  }
+  //xor_reconstruct(hmac_key,cid,32,ciphertext); 
+
+  Integer utk[96];
+  for (int i = 0; i < 32; i++) {
+    utk[i] = label[i];
+  }
+  for (int i = 0; i < 32; i++) {
+    utk[32 + i] = ciphertext[i];
+  }
+  for (int i = 0; i < 32; i++) {
+    utk[64 + i] = rprime_reconstruct[i];
+  }
+
+  // shard it in half 
+  Integer o1[96]; 
+  // o2 is just r_reconstruct; 
+  for (int i = 0; i < 96; i++) {
+    o1[i] = utk[i] ^ r_reconstruct[i];
+  }
+
+  //revealing the output 
+
+  cout << "reveal Alice output" << endl;
+  for (int i = 0; i < 96; i++) {
+    for (int j = 0; j < 8; j++) {
+      cout << o1[i][j].reveal(ALICE);
+      //cout << r_reconstruct[i][j].reveal(BOB);
+    }
+    cout << ", ";
+  }
+  cout << endl;
+
+  cout << "reveal Bob output" << endl;
+  for (int i = 0; i < 96; i++) {
+    for (int j = 0; j < 8; j++) {
+      //cout << o1[i][j].reveal(ALICE);
+      cout << r_reconstruct[i][j].reveal(BOB);
+    }
+    cout << ", ";
+  }
+  cout << endl;
 
   // char* key[KEY_LENGTH];
   // char* message[SN_LENGTH+1];
@@ -789,16 +849,16 @@ int main(int argc, char** argv) {
   //  key[i] = '\0';
   // }
 
-  cout << "gets Here" << endl;
-  uint8_t result[SHA256HashSize];
-  string hello = "\0\0\0\0\0\0\0\0\0\0\0\0";
-  string hello2 = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-  hello.append(1,'1');
+  //cout << "gets Here" << endl;
+  //uint8_t result[SHA256HashSize];
+  //string hello = "\0\0\0\0\0\0\0\0\0\0\0\0";
+  //string hello2 = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+  //hello.append(1,'2');
 
-  HMAC(EVP_sha256(), hello2.c_str(), KEY_LENGTH, (const unsigned char*)hello.c_str(), SN_LENGTH + 1, result, NULL);
-  printSSLHash(result, 32);
+  //HMAC(EVP_sha256(), hello2.c_str(), KEY_LENGTH, (const unsigned char*)hello.c_str(), SN_LENGTH + 1, result, NULL);
+  //printSSLHash(result, 32);
 
-  compareHash(result,digest);
+  //compareHash(result,digest);
   //assert(compareHash(result,digest) == true);
 
 
@@ -812,5 +872,7 @@ int main(int argc, char** argv) {
   // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
   //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
 
-  delete io  b  return 0;
+  cout << "gets here" << endl;
+  delete io;  
+  return 0;
 }
