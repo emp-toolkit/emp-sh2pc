@@ -630,7 +630,7 @@ void testInput(char* str, int length) {
 //   // compareHash(result, digest);
 // }
 
-Integer* runHmac(char* message, int message_length, char* key, int key_length) {
+Integer* runHmac(char* key, int key_length,char* message, int message_length) {
   /* HMAC test */
   
   Integer intMsg[message_length];
@@ -670,15 +670,15 @@ void testHmac() {
   //char* key = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
   //char* message = "Hi There";
   string key_str = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
-  string message_str = "Hi ThereHi ThereHi ThereHi There";
+  string message_str = "Hi ThereHi ThereHi ThereHi The";
   char* key = const_cast<char*>(key_str.c_str());
   char* message = const_cast<char*>(message_str.c_str());
   //char* key = (char*)"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";
   //char* message = (char*)"Hi ThereHi ThereHi ThereHi There";
   //uint8_t* output = (uint8_t*)"66d964249c39b37228034e549a66466ffc1848522fc01075c289655ed4f91ee7";
   uint8_t result[SHA256HashSize];
-  HMAC(EVP_sha256(), key, 32, (const unsigned char*)message, 32, result, NULL);
-  Integer* digest = runHmac(message,32, key,32);
+  HMAC(EVP_sha256(), key, 32, (const unsigned char*)message, 30, result, NULL);
+  Integer* digest = runHmac(message,30, key,32);
   //cout << "printing digest" << endl;
   //printHash(digest);
   //cout << "gets here" << endl;
@@ -689,25 +689,19 @@ void testHmac() {
 }
 
 int main(int argc, char** argv) {
-
-  static int BITMASK_LENGTH = 32;
-  
   int port, party;
-	parse_party_and_port(argv, &party, &port);
-
+  parse_party_and_port(argv, &party, &port);
   char* inputVal = argv[3];
-	int inputLength = atoi(argv[4]);
-//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
-//	NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
-	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
-
-	setup_semi_honest(io, party);
-
+  int inputLength = atoi(argv[4]);
+//  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
+//  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.38.26.99", port); // Andrew
+  NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
+  setup_semi_honest(io, party);
   //runHmac(inputVal, inputLength, inputVal, 32);
   testHmac();
-
   // testHmac((char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64,
   //            (char*)"abcdefghabcdefghabcdefghabcdefgh\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 64);
-
-	delete io;
+  delete io;
 }
+
+
