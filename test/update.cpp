@@ -706,6 +706,10 @@ void xor_reconstruct(char* int1, char* int2, int output_length, Integer* output)
 
 }
 
+void test_main(Integer* digest, char* random, char* k, char* p, char* r, char* rprime, char* cid) {
+
+}
+
 int main(int argc, char** argv) {
   static int SN_LENGTH = 12; 
   static int CID_LENGTH = 4;
@@ -757,15 +761,18 @@ NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
   xor_reconstruct(rprime,rprime,RPRIME_LENGTH, rprime_reconstruct);
 
   // parsing IDs from Data 
-  Integer sn[SN_LENGTH + 1];
+  Integer sn1[SN_LENGTH + 1];
+  Integer sn2[SN_LENGTH + 1];
   Integer cid[32];
   Integer token[TOKEN_LENGTH];
 
   for (int i = 0; i < SN_LENGTH; i++) {
-    sn[i] = p_reconstruct[i];
+    sn1[i] = p_reconstruct[i];
+    sn2[i] = p_reconstruct[i];
     //sn[i] = Integer(8,'1',PUBLIC);
   }
-  sn[SN_LENGTH] = Integer(8,'1',PUBLIC);
+  sn1[SN_LENGTH] = Integer(8,'1',PUBLIC);
+  sn2[SN_LENGTH] = Integer(8,'2',PUBLIC);
   // for (int i = SN_LENGTH; i < KEY_LENGTH; i++) {
   //  sn[i] = Integer(8,'0',PUBLIC);
   // }
@@ -780,16 +787,22 @@ NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
   token[0] = Integer(8,'1',PUBLIC);
 
-  cout << "r reconstruct array" << endl; 
-  printIntegerArray(r_reconstruct,RANDOM_LENGTH,8);
-  cout << "sn array" << endl; 
-  printIntegerArray(sn,SN_LENGTH+1,8);
+  //cout << "r reconstruct array" << endl; 
+  //printIntegerArray(r_reconstruct,RANDOM_LENGTH,8);
+  //cout << "sn array" << endl; 
+  //printIntegerArray(sn,SN_LENGTH+1,8);
 
-  Integer* label_key = runHmac(k_reconstruct,KEY_LENGTH,sn,SN_LENGTH + 1);
+  Integer* label_key = runHmac(k_reconstruct,KEY_LENGTH,sn1,SN_LENGTH + 1);
   Integer* label = runHmac(label_key,KEY_LENGTH,token,TOKEN_LENGTH);
+  cout << "PRINT LABEL OUTPUT" << endl;
+  printIntegerArray(label,KEY_LENGTH,8);
 
-  sn[SN_LENGTH] = Integer(8,'2',PUBLIC);
-  Integer* value_key = runHmac(k_reconstruct,KEY_LENGTH,sn,SN_LENGTH + 1);
+  Integer utk[96];
+  for (int i = 0; i < 32; i++) {
+    utk[i] = label[i];
+  }
+
+  Integer* value_key = runHmac(k_reconstruct,KEY_LENGTH,sn2,SN_LENGTH + 1);
   Integer* hmac_key = runHmac(value_key,KEY_LENGTH,rprime_reconstruct,RPRIME_LENGTH);
 
   //xor padded cid with hmac_key 
@@ -799,16 +812,15 @@ NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
   }
   //xor_reconstruct(hmac_key,cid,32,ciphertext); 
 
-  Integer utk[96];
-  for (int i = 0; i < 32; i++) {
-    utk[i] = label[i];
-  }
   for (int i = 0; i < 32; i++) {
     utk[32 + i] = ciphertext[i];
   }
   for (int i = 0; i < 32; i++) {
     utk[64 + i] = rprime_reconstruct[i];
   }
+
+  cout << "PRINT UTK ARRAY" << endl;
+  printIntegerArray(utk,96,8);
 
   // shard it in half 
   Integer o1[96]; 

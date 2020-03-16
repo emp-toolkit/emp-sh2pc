@@ -26,6 +26,7 @@ add_test (bit)
 add_test (example)
 #add_test (gc-sha)
 add_test(update)
+add_test(update_test)
 
 
 find_library(CRYPTOPP_LIBRARIES NAMES cryptopp libcryptopp )
