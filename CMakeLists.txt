@@ -43,7 +43,6 @@
 # add_test(hmac)
 
 
-
 # # add_test (sha256)
 
 
@@ -72,6 +71,7 @@ endmacro()
 
 # add_test(hmac)
 add_test(update)
+add_test(query)
 # add_test (bit)
 #add_test (int)
 #add_test (float)
