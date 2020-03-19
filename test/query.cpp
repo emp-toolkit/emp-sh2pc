@@ -220,14 +220,24 @@ void testQuery1() {
   assert(compareTokens(tokens1,tokens2) == true);
 }
 
+void convertHexToChar(char* hex, char* output, int output_length) {
+  for (int i = 0; i < output_length; i++) {
+    char c[2]; 
+    c[0] = hex[2*i];
+    c[1] = hex[2*i+1];
+    int number = (int) strtol(c,NULL,16);
+    output[i] = (char)number;
+  }
+}
+
 int main(int argc, char** argv) {
   int port, party;
   parse_party_and_port(argv, &party, &port);
 
-  char* k_share = argv[3];
-  char* q = argv[4];
-  char* r = argv[5];
-  char* rprime = argv[6];
+  char* k_share_hex = argv[3];
+  char* q_hex = argv[4];
+  char* r_hex = argv[5];
+  char* rprime_hex = argv[6];
 
 
 //  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
@@ -242,6 +252,15 @@ int main(int argc, char** argv) {
   cout << "PASSED" << endl;
 
   cout << "begin query 2pc" << endl;
+
+  char* k_share = k_share_hex;
+  char* q = q_hex;
+  char* r = r_hex;
+  char* rprime = rprime_hex;
+  convertHexToChar(k_share_hex,k_share,KEY_LENGTH);
+  convertHexToChar(p_hex,p,DATA_LENGTH);
+  convertHexToChar(r_hex,r,RANDOM_LENGTH);
+  convertHexToChar(rprime_hex,rprime,RPRIME_LENGTH);
 
   static Integer k_reconstruct[KEY_LENGTH];
   static Integer q_reconstruct[SN_LENGTH];
