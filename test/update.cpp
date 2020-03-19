@@ -192,29 +192,6 @@ bool compareUtk(char* expected, Integer* actual) {
 }
 
 char* find_utk(char* k_reconstruct, char* p_reconstruct, char* r_reconstruct, char* rprime_reconstruct) {
-    // char k_reconstruct[KEY_LENGTH];
-    // char p_reconstruct[DATA_LENGTH];
-    // char r_reconstruct[RANDOM_LENGTH];
-    // char rprime_reconstruct[RPRIME_LENGTH];
-
-    // for (int i = 0; i < KEY_LENGTH; i++) {
-    //   k_reconstruct[i] = (char)(k_share1[i] ^ k_share2[i]);
-    // //k_reconstruct[i] = Integer(8, '1', PUBLIC);
-    // }
-    // for (int i = 0; i < DATA_LENGTH; i++) {
-    //   p_reconstruct[i] = (char)(p1[i] ^ p2[i]);
-    // }
-    // for (int i = 0; i < RANDOM_LENGTH; i++) {
-    //   r_reconstruct[i] = (char)(r1[i] ^ r2[i]);
-    // }
-    // for (int i = 0; i < RPRIME_LENGTH; i++) {
-    //   rprime_reconstruct[i] = (char)(rprime1[i] ^ rprime2[i]);
-    // }
-    // cout << "print k_reconstruct" << endl;
-    // printarray(k_reconstruct,KEY_LENGTH); 
-    //printarray(p_reconstruct,DATA_LENGTH); 
-    //printarray(r_reconstruct,RANDOM_LENGTH); 
-    //printarray(rprime_reconstruct,RPRIME_LENGTH); 
 
     char sn1[SN_LENGTH + 1];
     char sn2[SN_LENGTH + 1];
@@ -408,15 +385,31 @@ void testUpdate2() {
   assert(compareUtk(utk1,utk2) == true);
 }
 
+void convertHexToChar(char* hex, char* output, int output_length) {
+  for (int i = 0; i < output_length; i++) {
+    char c[2]; 
+    c[0] = hex[2*i];
+    c[1] = hex[2*i+1];
+    int number = (int) strtol(c,NULL,16);
+    output[i] = (char)number;
+  }
+}
+
 int main(int argc, char** argv) {
 
   int port, party;
   parse_party_and_port(argv, &party, &port);
 
-  char* k_share = argv[3];
-  char* p = argv[4];
-  char* r = argv[5];
-  char* rprime = argv[6];
+  char* k_share_hex = argv[3];
+  char* p_hex = argv[4];
+  char* r_hex = argv[5];
+  char* rprime_hex = argv[6];
+  //string hello = "1112131415161718";
+  //char* test = (char*)hello.c_str();
+  //unsigned char output[8];
+  //printarray(test, 8); 
+  //convertHexToChar(test,output,8); 
+
 
 
 //  NetIO * io = new NetIO(party==ALICE ? nullptr : "10.116.70.95", port);
@@ -430,6 +423,14 @@ int main(int argc, char** argv) {
   //testUpdate2();
 
   cout << "begin actual 2pc" << endl;
+  char* k_share = k_share_hex;
+  char* p = p_hex;
+  char* r = r_hex;
+  char* rprime = rprime_hex;
+  convertHexToChar(k_share_hex,k_share,KEY_LENGTH);
+  convertHexToChar(p_hex,p,DATA_LENGTH);
+  convertHexToChar(r_hex,r,RANDOM_LENGTH);
+  convertHexToChar(rprime_hex,rprime,RPRIME_LENGTH);
 
   static Integer k_reconstruct[KEY_LENGTH];
   static Integer p_reconstruct[DATA_LENGTH];
