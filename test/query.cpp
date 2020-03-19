@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
   char* r = r_hex;
   char* rprime = rprime_hex;
   convertHexToChar(k_share_hex,k_share,KEY_LENGTH);
-  convertHexToChar(p_hex,p,DATA_LENGTH);
+  convertHexToChar(q_hex,q,SN_LENGTH);
   convertHexToChar(r_hex,r,RANDOM_LENGTH);
   convertHexToChar(rprime_hex,rprime,RPRIME_LENGTH);
 
