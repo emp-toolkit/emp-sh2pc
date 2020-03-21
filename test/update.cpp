@@ -475,22 +475,24 @@ int main(int argc, char** argv) {
 
   //revealing the output 
 
-  cout << "reveal Alice output" << endl;
+  cout << "Party 1 Output:";
   for (int i = 0; i < 96; i++) {
     for (int j = 0; j < 8; j++) {
       cout << o1[i][j].reveal(ALICE);
     }
-    cout << ", ";
+    cout << ",";
   }
   cout << endl;
+  cout << "End of Party 1 Output" << endl;
 
-  cout << "reveal Bob output" << endl;
+  cout << "Party 2 Output: ";
   for (int i = 0; i < 96; i++) {
     for (int j = 0; j < 8; j++) {
       cout << r_reconstruct[i][j].reveal(BOB);
     }
-    cout << ", ";
+    cout << ",";
   }
+  cout << "End of Party 2 Output" << endl;
 
   delete io;
   return 0;

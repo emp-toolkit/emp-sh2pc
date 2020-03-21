@@ -85,12 +85,9 @@ Integer* runHmac(Integer* key, int key_length,Integer* message, int message_leng
   static Integer digest_buf[SHA256HashSize];
   Integer* digest = digest_buf;
   EMP_HMAC_Context context;
-  // HMAC_Reset(&context, intKey, key_length);
-  // HMAC_Input(&context, intMsg, message_length);
   HMAC_Reset(&context, key, key_length);
   HMAC_Input(&context, message, message_length);
   HMAC_Result(&context, digest);
-  printHash(digest);
 
   Integer* digest_ptr = new Integer(); 
   digest_ptr = digest;
@@ -107,7 +104,6 @@ char* find_tokens(char* k_reconstruct, char* q_reconstruct, char* r_reconstruct,
     for (int i = 0; i < SN_LENGTH; i++) {
       sn1[i] = q_reconstruct[i];
       sn2[i] = q_reconstruct[i];
-    //sn[i] = Integer(8,'1',PUBLIC);
     }
     sn1[SN_LENGTH] = '1';
     sn2[SN_LENGTH] = '2';
@@ -116,18 +112,12 @@ char* find_tokens(char* k_reconstruct, char* q_reconstruct, char* r_reconstruct,
 
     uint8_t temp1[SHA256HashSize];
     HMAC(EVP_sha256(), k_reconstruct, KEY_LENGTH, (const unsigned char*)sn1, SN_LENGTH + 1, temp1, NULL);
-    //printSSLHash(temp1, 32);
     char* label_key = (char*) temp1;
     uint8_t temp2[SHA256HashSize];
     HMAC(EVP_sha256(), label_key, KEY_LENGTH, (const unsigned char*)ctr, TOKEN_LENGTH, temp2, NULL);
-    //cout << "printing label" << endl;
-    //printSSLHash(temp2, 32);
     char* tk1 = (char*) temp2;
-    //cout << "printing label from char" << endl; 
-    //printarray(label,32);
     uint8_t temp3[SHA256HashSize];
     HMAC(EVP_sha256(), k_reconstruct, KEY_LENGTH, (const unsigned char*)sn2, SN_LENGTH + 1, temp3, NULL);
-    //printSSLHash(temp3, 32);
     char* tk2 = (char*) temp3;
 
     for (int i = 0; i < KEY_LENGTH; i++) {
@@ -138,8 +128,6 @@ char* find_tokens(char* k_reconstruct, char* q_reconstruct, char* r_reconstruct,
     }
 
     char* output = tokens;
-    printarray(output,64);
-    cout << "GETS HERE" << endl;
     return output;
 }
 
@@ -173,8 +161,8 @@ Integer* generate_secure_tokens(Integer* k_reconstruct, Integer* q_reconstruct, 
   	tokens[KEY_LENGTH + i] = tk2[i];
   }
 
-  cout << "PRINT TOKEN2 ARRAY" << endl;
-  printIntegerArray(tokens,64,8);
+  // cout << "PRINT TOKEN2 ARRAY" << endl;
+  // printIntegerArray(tokens,64,8);
   Integer* output = tokens;
   return output;
 }
@@ -184,10 +172,7 @@ void testQuery1() {
   char* data = (char*)"KKEyW9gWPnA7";
   char* random = (char*)"nXnqtkTMXn2dUnpjtxw6FAd57W2PUqzb";
   char* rprimes = (char*)"WWmAfsr3ZKSA7u9JgSfcW3MGyfJEHEsq";
-  //Integer* k = convertStringtoIntegerArray(key, KEY_LENGTH); 
-  //Integer* p = convertStringtoIntegerArray(data, DATA_LENGTH); 
-  //Integer* r = convertStringtoIntegerArray(random, RANDOM_LENGTH); 
-  //Integer* rprime = convertStringtoIntegerArray(rprimes, RPRIME_LENGTH); 
+
   static Integer k[KEY_LENGTH];
   static Integer q[SN_LENGTH]; 
   static Integer r[RANDOM_LENGTH];
@@ -207,16 +192,7 @@ void testQuery1() {
   }
 
   char* tokens1 = find_tokens(key,data,random,rprimes);
-
-  //cout << "gets to utk2" << endl;
   Integer* tokens2 = generate_secure_tokens(k,q,r,rprime); 
-
-  //cout << "printing utk1" << endl;
-  cout << "TOKEN1" << endl;
-  printarray(tokens1,64);
-  cout << "TOKEN2" << endl;
-  printIntegerArray(tokens2,64,8);
-
   assert(compareTokens(tokens1,tokens2) == true);
 }
 
@@ -267,35 +243,25 @@ int main(int argc, char** argv) {
   static Integer r_reconstruct[RANDOM_LENGTH];
   static Integer rprime_reconstruct[RPRIME_LENGTH];
 
-  cout << "line 141" << endl; 
-
-
   for (int i = 0; i < KEY_LENGTH; i++) {
     k_reconstruct[i] = Integer(8, k_share[i], PUBLIC);
     //k_reconstruct[i] = Integer(8, '1', PUBLIC);
   }
   printIntegerArray(k_reconstruct, KEY_LENGTH,8);
 
-  cout << "line 148" << endl;
-
   for (int i = 0; i < SN_LENGTH; i++) {
     q_reconstruct[i] = Integer(8, q[i], PUBLIC);
   }
 
-  cout << "second" << endl; 
   for (int i = 0; i < RANDOM_LENGTH; i++) {
     r_reconstruct[i] = Integer(8, r[i], PUBLIC);
   }
-
-  cout << "third" << endl;
 
   for (int i = 0; i < RPRIME_LENGTH; i++) {
     rprime_reconstruct[i] = Integer(8, rprime[i], PUBLIC);
   }
 
-  cout << "fourth" << endl;
-
-  printIntegerArray(k_reconstruct, KEY_LENGTH,8);
+  // printIntegerArray(k_reconstruct, KEY_LENGTH,8);
 
   // reconstructing everything between Alice and Bob 
   xor_reconstruct(k_share,k_share,KEY_LENGTH, k_reconstruct); 
@@ -303,7 +269,6 @@ int main(int argc, char** argv) {
   xor_reconstruct(r,r,RANDOM_LENGTH, r_reconstruct);
   xor_reconstruct(rprime,rprime,RPRIME_LENGTH, rprime_reconstruct);
 
-  cout << "AFAFASF" << endl;
   Integer* k_reconstruct_ptr = k_reconstruct; 
   Integer* q_reconstruct_ptr = q_reconstruct; 
   Integer* r_reconstruct_ptr = r_reconstruct; 
@@ -313,72 +278,79 @@ int main(int argc, char** argv) {
 
   // Calculate the token
 
-  cout << "HELLO" << endl;
-
   Integer* tokens = generate_secure_tokens(k_reconstruct_ptr,q_reconstruct_ptr,r_reconstruct_ptr,rprime_reconstruct_ptr);
-
-  // split tokens in half 
-
-  Integer tk1[KEY_LENGTH];
-  Integer tk2[KEY_LENGTH]; 
+  Integer tokensA[KEY_LENGTH * 2];
+  Integer tokensB[KEY_LENGTH * 2];
 
   for (int i = 0; i < KEY_LENGTH; i++) {
-  	tk1[i] = tokens[i];
+    tokensA[i] = tokens[i] ^ r_reconstruct[i];
   }
   for (int i = 0; i < KEY_LENGTH; i++) {
-  	tk2[i] = tokens[KEY_LENGTH + i];
+    tokensA[i + KEY_LENGTH] = tokens[i + KEY_LENGTH] ^ rprime_reconstruct[i];
   }
 
-  // shard it in half 
-  Integer tk1_A[KEY_LENGTH];
-  Integer tk2_A[KEY_LENGTH]; 
-
-  // Bob's is just the reconstructed randomness; 
-
-  // o2 is just r_reconstruct; 
   for (int i = 0; i < KEY_LENGTH; i++) {
-    tk1_A[i] = tk1[i] ^ r_reconstruct[i];
+    tokensB[i] = r_reconstruct[i];
   }
   for (int i = 0; i < KEY_LENGTH; i++) {
-    tk2_A[i] = tk2[i] ^ rprime_reconstruct[i];
+    tokensB[i + KEY_LENGTH] = rprime_reconstruct[i];
   }
 
-  //revealing the output 
-
-  cout << "reveal Alice output for tk1" << endl;
-  for (int i = 0; i < KEY_LENGTH; i++) {
+  cout << "Party 1 Output:";
+  for (int i = 0; i < KEY_LENGTH * 2; i++) {
     for (int j = 0; j < 8; j++) {
-      cout << tk1_A[i][j].reveal(ALICE);
+      cout << tokensA[i][j].reveal(ALICE);
     }
-    cout << ", ";
+    cout << ",";
   }
-  cout << endl;
+  cout << "End of Party 1 Output" << endl;
 
-  cout << "reveal Bob output for tk1" << endl;
-  for (int i = 0; i < RANDOM_LENGTH; i++) {
+  cout << "Party 2 Output:";
+  for (int i = 0; i < KEY_LENGTH * 2; i++) {
     for (int j = 0; j < 8; j++) {
-      cout << r_reconstruct[i][j].reveal(BOB);
+      cout << tokensB[i][j].reveal(BOB);
     }
-    cout << ", ";
+    cout << ",";
   }
-  cout << endl;
-  cout << "reveal Alice output for tk2" << endl;
-  for (int i = 0; i < KEY_LENGTH; i++) {
-    for (int j = 0; j < 8; j++) {
-      cout << tk2_A[i][j].reveal(ALICE);
-    }
-    cout << ", ";
-  }
-  cout << endl;
+  cout << "End of Party 2 Output" << endl;
 
-  cout << "reveal Bob output for tk2" << endl;
-  for (int i = 0; i < RPRIME_LENGTH; i++) {
-    for (int j = 0; j < 8; j++) {
-      cout << rprime_reconstruct[i][j].reveal(BOB);
-    }
-    cout << ", ";
-  }
-  cout << endl;
+
+  // //revealing the output 
+
+  // cout << "reveal Alice output for tk1" << endl;
+  // for (int i = 0; i < KEY_LENGTH; i++) {
+  //   for (int j = 0; j < 8; j++) {
+  //     cout << tk1_A[i][j].reveal(ALICE);
+  //   }
+  //   cout << ", ";
+  // }
+  // cout << endl;
+
+  // cout << "reveal Bob output for tk1" << endl;
+  // for (int i = 0; i < RANDOM_LENGTH; i++) {
+  //   for (int j = 0; j < 8; j++) {
+  //     cout << r_reconstruct[i][j].reveal(BOB);
+  //   }
+  //   cout << ", ";
+  // }
+  // cout << endl;
+  // cout << "reveal Alice output for tk2" << endl;
+  // for (int i = 0; i < KEY_LENGTH; i++) {
+  //   for (int j = 0; j < 8; j++) {
+  //     cout << tk2_A[i][j].reveal(ALICE);
+  //   }
+  //   cout << ", ";
+  // }
+  // cout << endl;
+
+  // cout << "reveal Bob output for tk2" << endl;
+  // for (int i = 0; i < RPRIME_LENGTH; i++) {
+  //   for (int j = 0; j < 8; j++) {
+  //     cout << rprime_reconstruct[i][j].reveal(BOB);
+  //   }
+  //   cout << ", ";
+  // }
+  // cout << endl;
 
   delete io;
   return 0;
