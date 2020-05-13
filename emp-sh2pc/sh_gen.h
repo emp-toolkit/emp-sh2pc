@@ -36,7 +36,7 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 			} else {
 				bool * tmp = new bool[length];
 				if(length > this->batch_size - this->top) {
-					memcpy(label, this->buf, (this->batch_size-this->top)*sizeof(block));
+					memcpy(label, this->buf + this->top, (this->batch_size-this->top)*sizeof(block));
 					int filled = this->batch_size - this->top;
 					refill();
 					memcpy(label + filled, this->buf, (length - filled)*sizeof(block));
