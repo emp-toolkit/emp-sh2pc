@@ -4,7 +4,7 @@ using namespace emp;
 using namespace std;
 
 template<typename Op, typename Op2>
-void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 100) {
+void test_int(int party, int range1 = 1<<25, int range2 = 1<<25, int runs = 10000) {
 	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
 		long long ia, ib;

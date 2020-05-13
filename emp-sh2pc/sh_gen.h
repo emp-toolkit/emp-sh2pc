@@ -9,8 +9,9 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 	HalfGateGen<IO> * gc;
 	SemiHonestGen(IO* io, HalfGateGen<IO>* gc): SemiHonestParty<IO>(io, ALICE) {
 		this->gc = gc;
-		this->ot->setup_send();
-		this->gc->set_delta(this->ot->Delta);
+		bool delta_bool[128];
+		block_to_bool(delta_bool, gc->delta);
+		this->ot->setup_send(delta_bool);
 		block seed;
 		PRG prg;
 		prg.random_block(&seed, 1);
