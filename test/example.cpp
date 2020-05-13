@@ -5,30 +5,38 @@ using namespace std;
 void test_millionare(int party, int number) {
 	Integer a(32, number, ALICE);
 	Integer b(32, number, BOB);
+	Bit res = a > b;
 
-	cout << "ALICE Input:\t"<<a.reveal<int>()<<endl;
-	cout << "BOB Input:\t"<<b.reveal<int>()<<endl;
-	cout << "ALICE larger?\t"<< (a>b).reveal<bool>()<<endl;
+	cout << "ALICE larger?\t"<< res.reveal<bool>()<<endl;
 }
 
 void test_sort(int party) {
-	int size = 10;
-	Batcher batcher1, batcher2;
+	int size = 100;
 	Integer *A = new Integer[size];
-	for(int i = 0; i < size; ++i) {
-		batcher1.add<Integer>(32, rand()%1024);
-		batcher2.add<Integer>(32, rand()%1024);
-	}
+	Integer *B = new Integer[size];
+	Integer *res = new Integer[size];
 
-	batcher1.make_semi_honest(ALICE);
-	batcher2.make_semi_honest(BOB);
-
+// First specify Alice's input
 	for(int i = 0; i < size; ++i)
-		A[i] = batcher1.next<Integer>() ^ batcher2.next<Integer>();
+		A[i] = Integer(32, rand()%102400, ALICE);
 
-	sort(A, size);
+
+// Now specify Bob's input
 	for(int i = 0; i < size; ++i)
-		cout << A[i].reveal<string>()<<endl;
+		B[i] = Integer(32, rand()%102400, BOB);
+
+//Now compute
+	for(int i = 0; i < size; ++i)
+		res[i] = A[i] ^ B[i];
+	
+
+	sort(res, size);
+	for(int i = 0; i < 100; ++i)
+		cout << res[i].reveal<int32_t>()<<endl;
+
+	delete[] A;
+	delete[] B;
+	delete[] res;
 }
 
 int main(int argc, char** argv) {

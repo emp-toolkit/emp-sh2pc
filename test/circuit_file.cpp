@@ -13,7 +13,7 @@ void test() {
 	Integer b(128, 3, BOB);
 	Integer c(128, 1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
-			cf.compute((block*)c.bits, (block*)a.bits, (block*)b.bits);
+			cf.compute((block*)c.bits.data(), (block*)a.bits.data(), (block*)b.bits.data());
 	}
 	cout << time_from(start)<<" "<<party<<" "<<c.reveal<string>(BOB)<<endl;
 
