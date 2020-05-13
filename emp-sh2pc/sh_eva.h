@@ -34,9 +34,8 @@ class SemiHonestEva: public SemiHonestParty<IO> { public:
 					int filled = this->batch_size - this->top;
 					refill();
 					memcpy(label+filled, this->buf, (length - filled)*sizeof(block));
-					memcpy(tmp+ filled, this->buff, 
-							length - filled);
-					this->top = this->batch_size - filled;
+					memcpy(tmp+ filled, this->buff, length - filled);
+					this->top = length - filled;
 				} else {
 					memcpy(label, this->buf+this->top, length*sizeof(block));
 					memcpy(tmp, this->buff+this->top, length);
@@ -44,7 +43,7 @@ class SemiHonestEva: public SemiHonestParty<IO> { public:
 				}
 
 				for(int i = 0; i < length; ++i)
-					tmp[i] = tmp[i] != b[i]; 
+					tmp[i] = (tmp[i] != b[i]); 
 				this->io->send_data(tmp, length);
 
 				delete[] tmp;

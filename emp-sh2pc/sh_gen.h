@@ -40,7 +40,7 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 					int filled = this->batch_size - this->top;
 					refill();
 					memcpy(label + filled, this->buf, (length - filled)*sizeof(block));
-					this->top += (this->batch_size - filled);
+					this->top += (length - filled);
 				} else {
 					memcpy(label, this->buf+this->top, length*sizeof(block));
 					this->top+=length;
