@@ -46,6 +46,7 @@ before_install:
   - bash ./emp-readme/scripts/install_emp-ot.sh
 
 script:
-  - cmake -DCMAKE_BUILD_TYPE=$TYPE . && make 
-  - ./run ./bin/bit 12345
-  - ./run ./bin/int 12345
+  - cmake -DCMAKE_BUILD_TYPE=$TYPE -DENABLE_FLOAT=On . && make 
+  - ./run ./bin/bit
+  - ./run ./bin/int
+  - ./run ./bin/float

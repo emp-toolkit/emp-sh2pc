@@ -41,7 +41,7 @@ bool accurate(double a, double b, double err) {
 	else return false;
 }
 
-PRG prg;
+PRG prg(fix_key);
 template<typename Op, typename Op2>
 void test_float(double precision, int runs = 1000) {
 	for(int i = 0; i < runs; ++i) {
@@ -51,17 +51,20 @@ void test_float(double precision, int runs = 1000) {
 		float da = (float)(ia) / 10000000.0;
 		float db = (float)(ib) / 10000000.0;
 
-		Float a(da, PUBLIC);
-		Float b(db, PUBLIC);
+		Float a(da, ALICE);
+		Float b(db, BOB);
 		Float res = Op2()(a,b);
 		
 		if(precision > 0.0) {
 			if (not accurate(res.reveal<double>(PUBLIC), Op()(da,db), precision)) {
-				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
+				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\n";
+				cout << "\t\t\t"<<"\t"<< a.reveal<double>(PUBLIC) <<"\t"<<b.reveal<double>(PUBLIC)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
+				return;
 			}
 		} else {
 			if (not equal(res, Op()(da,db))) {
-				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
+				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\n";
+				cout << "\t\t\t"<<"\t"<< a.reveal<double>(PUBLIC) <<"\t"<<b.reveal<double>(PUBLIC)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
 			}
 		}
 	}
@@ -69,14 +72,13 @@ void test_float(double precision, int runs = 1000) {
 }
 
 void test_float(int func_id, double precision, double minimize, int runs = 1000) {
-	PRG prg;
 	int rate_cnt = 0;
 	const double pi = std::acos(-1);
 	for(int i = 0; i < runs; ++i) {
 		long ia;
 		prg.random_data(&ia, sizeof(long));
 		float da = ia / minimize;
-		Float a(da, PUBLIC);
+		Float a(da, ALICE);
 		Float res = Float(0.0, PUBLIC);
 		float comp = 0.0;
 		switch(func_id) {
@@ -136,8 +138,8 @@ void scratch_pad(double num) {
 
 void fp_cmp(double a, double b) {
 	cout << "compare (eq, le, lt): " << a << " " << b << " - ";
-	Float x(a, PUBLIC);
-	Float y(b, PUBLIC);
+	Float x(a, ALICE);
+	Float y(b, BOB);
 
 	Bit z = x.equal(y);
 	cout << z.reveal<bool>() << " ";
@@ -149,8 +151,8 @@ void fp_cmp(double a, double b) {
 
 void fp_if(double a, double b) {
 	cout << "if true/false: " << a << " " << b << " - ";
-	Float x(a, PUBLIC);
-	Float y(b, PUBLIC);
+	Float x(a, ALICE);
+	Float y(b, BOB);
 	Bit one = Bit(true, PUBLIC);
 	Bit zero = Bit(false, PUBLIC); 
 
@@ -162,7 +164,7 @@ void fp_if(double a, double b) {
 
 void fp_abs(double a) {
 	cout << "abs: " << a << " - ";
-	Float x(a, PUBLIC);
+	Float x(a, ALICE);
 
 	Float z = x.abs();
 	cout << z.reveal<string>() << endl;
@@ -173,19 +175,17 @@ int main(int argc, char** argv) {
 	parse_party_and_port(argv, &party, &port);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 	auto ctx = setup_semi_honest(io, party);
-//	ctx->set_batch_size(1024*1024);//set larger BOB input processing batch size
+	ctx->set_batch_size(1024*1024);//set larger BOB input processing batch size
 
-/*	cout << "Test function:" << endl;
+	cout << "Test function:" << endl;
 	fp_cmp(52.21875, 52.21875);
 	fp_cmp(24.4332565, 52.21875);
 	fp_if(24.4332565, 52.21875);
 	fp_abs(-24.422432);
 	fp_abs(24.422432);
-*/
+
 	cout << endl << "Test accuracy:" << endl;
 	test_float<std::plus<float>, std::plus<Float>>(0.0);
-
-return 0;
 	test_float<std::minus<float>, std::minus<Float>>(0.0);
 	test_float<std::multiplies<float>, std::multiplies<Float>>(0.0);
 	test_float<std::divides<float>, std::divides<Float>>(0.0);
