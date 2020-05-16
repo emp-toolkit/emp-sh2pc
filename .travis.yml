@@ -43,6 +43,7 @@ before_install:
   - git clone -brelease-2 https://github.com/emp-toolkit/emp-readme.git
   - bash ./emp-readme/scripts/install_packages.sh
   - bash ./emp-readme/scripts/install_emp-tool.sh
+  - cd emp-tool; cmake -DENABLE_FLOAT=On .; sudo make install; cd ..
   - bash ./emp-readme/scripts/install_emp-ot.sh
 
 script:
