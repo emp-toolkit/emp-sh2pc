@@ -40,11 +40,8 @@ matrix:
       
 before_install:
   - eval "${MATRIX_EVAL}"
-  - git clone https://github.com/emp-toolkit/emp-readme.git
-  - bash ./emp-readme/scripts/install_packages.sh
-  - bash ./emp-readme/scripts/install_emp-tool.sh
-  - cd emp-tool; cmake -DENABLE_FLOAT=On .; sudo make install; cd ..
-  - bash ./emp-readme/scripts/install_emp-ot.sh
+  - wget https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/scripts/install.py
+  - python install.py -install -tool -ot
 
 script:
   - cmake -DCMAKE_BUILD_TYPE=$TYPE -DENABLE_FLOAT=On . && make 
