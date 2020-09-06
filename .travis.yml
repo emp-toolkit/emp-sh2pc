@@ -42,6 +42,7 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - wget https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/scripts/install.py
   - python install.py -install -tool -ot
+  - cd emp-tool; cmake -DENABLE_FLOAT=On .; sudo make install; cd .. 
 
 script:
   - cmake -DCMAKE_BUILD_TYPE=$TYPE -DENABLE_FLOAT=On . && make 
