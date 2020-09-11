@@ -4,8 +4,8 @@ using namespace std;
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
 int port, party;
-string file = circuit_file_location+"/AES-non-expanded.txt";//adder_32bit.txt";
-CircuitFile cf(file.c_str());
+string file = circuit_file_location+"/bristol_format/AES-non-expanded.txt";//adder_32bit.txt";
+BristolFormat cf(file.c_str());
 
 void test() {
 	auto start = clock_start();
