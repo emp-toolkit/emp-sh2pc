@@ -16,7 +16,7 @@ class SemiHonestParty: public ProtocolExecution { public:
 	int top = 0;
 	int batch_size = 1024*16;
 
-	SemiHonestParty(IO * io, int party) : ProtocolExecution(ALICE) {
+	SemiHonestParty(IO * io, int party) : ProtocolExecution(party) {
 		this->io = io;
 		ot = new IKNP<IO>(io);
 		buf = new block[batch_size];
