@@ -46,6 +46,7 @@ int main(int argc, char** argv) {
 
 	setup_semi_honest(io, party);
 	test_millionare(party, atoi(argv[3]));
-	test_sort(party);
+//	test_sort(party);
+	cout << CircuitExecution::circ_exec->num_and()<<endl;
 	delete io;
 }
