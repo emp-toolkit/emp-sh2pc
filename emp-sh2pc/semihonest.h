@@ -18,5 +18,11 @@ inline SemiHonestParty<IO>* setup_semi_honest(IO* io, int party, int batch_size 
 	}
 	return (SemiHonestParty<IO>*)ProtocolExecution::prot_exec;
 }
+
+inline void finalize_semi_honest() {
+	delete CircuitExecution::circ_exec;
+	delete ProtocolExecution::prot_exec;
+}
+
 }
 #endif

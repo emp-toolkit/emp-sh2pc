@@ -25,5 +25,6 @@ int main(int argc, char** argv) {
 	setup_semi_honest(io, party);
 	test();
 	
+	finalize_semi_honest();
 	delete io;
 }

@@ -48,5 +48,6 @@ int main(int argc, char** argv) {
 	test_millionare(party, atoi(argv[3]));
 //	test_sort(party);
 	cout << CircuitExecution::circ_exec->num_and()<<endl;
+	finalize_semi_honest();
 	delete io;
 }

@@ -11,8 +11,7 @@ void setup() {
 }
 void done() {
 	delete netio;
-	delete CircuitExecution::circ_exec;
-	delete ProtocolExecution::prot_exec;
+	finalize_semi_honest();
 }
 
 void test_int_reveal(int number) {

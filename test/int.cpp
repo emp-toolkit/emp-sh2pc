@@ -55,5 +55,6 @@ int main(int argc, char** argv) {
 	test_int<std::bit_or<int>, std::bit_or<Integer>>(party);
 	test_int<std::bit_xor<int>, std::bit_xor<Integer>>(party);
 
+	finalize_semi_honest();
 	delete io;
 }

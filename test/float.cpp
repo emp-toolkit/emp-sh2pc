@@ -198,5 +198,6 @@ int main(int argc, char** argv) {
 	test_float(6, 1e-3, 1e12);
 	test_float(7, 1e-3, 1e12);
 
+	finalize_semi_honest();
 	return 0;
 }

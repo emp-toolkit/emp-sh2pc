@@ -81,5 +81,6 @@ int main(int argc, char** argv) {
 	io = new NetIO(party==ALICE?nullptr:"127.0.0.1", port);
 	setup_semi_honest(io, party);
 	test_bit();
+	finalize_semi_honest();
 	delete io;
 }
