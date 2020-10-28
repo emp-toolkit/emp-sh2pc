@@ -17,6 +17,7 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 		prg.random_block(&seed, 1);
 		this->io->send_block(&seed, 1);
 		this->shared_prg.reseed(&seed);
+		refill();
 	}
 
 	void refill() {
@@ -41,7 +42,7 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 					int filled = this->batch_size - this->top;
 					refill();
 					memcpy(label + filled, this->buf, (length - filled)*sizeof(block));
-					this->top += (length - filled);
+					this->top = (length - filled);
 				} else {
 					memcpy(label, this->buf+this->top, length*sizeof(block));
 					this->top+=length;

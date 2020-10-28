@@ -12,6 +12,7 @@ class SemiHonestEva: public SemiHonestParty<IO> { public:
 		this->ot->setup_recv();
 		block seed; this->io->recv_block(&seed, 1);
 		this->shared_prg.reseed(&seed);
+		refill();
 	}
 
 	void refill() {
