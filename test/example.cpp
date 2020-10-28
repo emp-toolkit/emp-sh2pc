@@ -2,38 +2,51 @@
 using namespace emp;
 using namespace std;
 
-int party;
-int port = 12345;
-NetIO * netio;
-void setup() {
-	netio =  new emp::NetIO(party == emp::ALICE ? nullptr : "127.0.0.1", port++, true);
-	emp::setup_semi_honest(netio, party,  1024);
-}
-void done() {
-	delete netio;
-	delete CircuitExecution::circ_exec;
-	delete ProtocolExecution::prot_exec;
-}
-
-void test_int_reveal(int number) {
-	setup();
+void test_millionare(int party, int number) {
 	Integer a(32, number, ALICE);
-	Integer b;
-	for(int i = 0; i < 1000; ++i)
-		b = Integer(32, number+1, BOB);
-	int32_t aa = a.reveal<int32_t>(PUBLIC);
-	int32_t bb = b.reveal<int32_t>(PUBLIC);
+	Integer b(32, number, BOB);
+	Bit res = a > b;
 
-	if(aa != number)error("int a!\n");
-	if(bb != number+1) {
-		cout << bb<<endl;
-		cout << b.reveal<string>(PUBLIC)<<endl;
-	}
-	done();
+	cout << "ALICE larger?\t"<< res.reveal<bool>()<<endl;
+}
+
+void test_sort(int party) {
+	int size = 100;
+	Integer *A = new Integer[size];
+	Integer *B = new Integer[size];
+	Integer *res = new Integer[size];
+
+// First specify Alice's input
+	for(int i = 0; i < size; ++i)
+		A[i] = Integer(32, rand()%102400, ALICE);
+
+
+// Now specify Bob's input
+	for(int i = 0; i < size; ++i)
+		B[i] = Integer(32, rand()%102400, BOB);
+
+//Now compute
+	for(int i = 0; i < size; ++i)
+		res[i] = A[i] ^ B[i];
+	
+
+	sort(res, size);
+	for(int i = 0; i < 100; ++i)
+		cout << res[i].reveal<int32_t>()<<endl;
+
+	delete[] A;
+	delete[] B;
+	delete[] res;
 }
 
 int main(int argc, char** argv) {
+	int port, party;
 	parse_party_and_port(argv, &party, &port);
-	for(int i = 0; i < 4; ++i)
-		test_int_reveal(1);
+	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
+
+	setup_semi_honest(io, party);
+	test_millionare(party, atoi(argv[3]));
+//	test_sort(party);
+	cout << CircuitExecution::circ_exec->num_and()<<endl;
+	delete io;
 }
