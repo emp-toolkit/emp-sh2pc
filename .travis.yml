@@ -49,3 +49,4 @@ script:
   - ./run ./bin/bit
   - ./run ./bin/int
   - ./run ./bin/float
+  - ./run ./bin/repeat
