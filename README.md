@@ -1,4 +1,6 @@
-# emp-sh2pc [![Build Status](https://travis-ci.org/emp-toolkit/emp-sh2pc.svg?branch=master)](https://travis-ci.org/emp-toolkit/emp-sh2pc)
+# emp-sh2pc
+![arm](https://github.com/emp-toolkit/emp-sh2pc/workflows/arm/badge.svg)
+![x86](https://github.com/emp-toolkit/emp-sh2pc/workflows/x86/badge.svg)
 
 <img src="https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/art/logo-full.jpg" width=300px/>
 
