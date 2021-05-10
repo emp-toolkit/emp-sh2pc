@@ -1,10 +1,14 @@
-
-install_manifest.txt
+Testing/
+*.DS_Store
+*.txt.cpp
+*CTestTestfile.cmake
+*perf.data*
 CMakeCache.txt
 CMakeFiles/
 Makefile
 bin/
 cmake_install.cmake
+install_manifest.txt
 # Compiled Object files
 *.slo
 *.lo
@@ -33,3 +37,15 @@ cmake_install.cmake
 *.exe
 *.out
 *.app
+
+# Emacs
+*~
+
+# CMake generated .h files
+emp-ot/latticeInclude.h
+
+# Eigen source
+eigen/
+
+# VOLE COT data file
+data/

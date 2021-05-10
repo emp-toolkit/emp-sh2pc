@@ -8,6 +8,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     env: 
       BUILD_TYPE: ${{matrix.build_type}}
     steps:
@@ -22,7 +23,4 @@ jobs:
     - name: Test
       shell: bash
       run: |
-        ./run ./bin/bit
-        ./run ./bin/int
-        ./run ./bin/float
-        ./run ./bin/repeat
+        make test

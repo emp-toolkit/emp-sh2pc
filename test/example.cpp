@@ -42,10 +42,13 @@ void test_sort(int party) {
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
+	int num = 20;
+	if(argc > 3)
+		num = atoi(argv[3]);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
 	setup_semi_honest(io, party);
-	test_millionare(party, atoi(argv[3]));
+	test_millionare(party, num);
 //	test_sort(party);
 	cout << CircuitExecution::circ_exec->num_and()<<endl;
 	finalize_semi_honest();
