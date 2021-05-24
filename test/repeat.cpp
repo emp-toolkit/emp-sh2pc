@@ -6,7 +6,8 @@ int party;
 int port = 12345;
 NetIO * netio;
 void setup() {
-	netio =  new emp::NetIO(party == emp::ALICE ? nullptr : "127.0.0.1", port++, true);
+	usleep(100);
+	netio =  new emp::NetIO(party == emp::ALICE ? nullptr : "127.0.0.1", port, true);
 	emp::setup_semi_honest(netio, party,  1024);
 }
 void done() {
