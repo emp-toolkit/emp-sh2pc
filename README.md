@@ -1,6 +1,8 @@
 # emp-sh2pc
 ![arm](https://github.com/emp-toolkit/emp-sh2pc/workflows/arm/badge.svg)
 ![x86](https://github.com/emp-toolkit/emp-sh2pc/workflows/x86/badge.svg)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/emp-toolkit/emp-sh2pc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/emp-toolkit/emp-sh2pc/alerts/)
+[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/emp-toolkit/emp-sh2pc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/emp-toolkit/emp-sh2pc/context:cpp)
 
 <img src="https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/art/logo-full.jpg" width=300px/>
 
