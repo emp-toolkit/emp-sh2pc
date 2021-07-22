@@ -17,9 +17,8 @@ jobs:
       run: |
         wget https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/scripts/install.py
         python3 install.py -install -tool -ot
-        cd emp-tool && cmake -DENABLE_FLOAT=On . && sudo make install
     - name: Create Build Environment
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_FLOAT=On -DUSE_RANDOM_DEVICE=On && make
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSE_RANDOM_DEVICE=On && make
     - name: Test
       shell: bash
       run: |
