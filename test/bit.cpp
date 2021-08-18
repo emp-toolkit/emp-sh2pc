@@ -3,6 +3,7 @@ using namespace emp;
 using namespace std;
 NetIO * io;
 int party;
+using Bit = Bit_T<SemiHonestGarbledCircuit::wire_t>;
 
 void test_bit() {
 	bool b[] = {true, false};
@@ -79,8 +80,9 @@ int main(int argc, char** argv) {
 	int port;
 	parse_party_and_port(argv, &party, &port);
 	io = new NetIO(party==ALICE?nullptr:"127.0.0.1", port);
-	setup_semi_honest(io, party);
+	if(party == ALICE) emp::backend = new SemiHonestGen<NetIO>(io);
+	else emp::backend = new SemiHonestEva<NetIO>(io);
 	test_bit();
-	finalize_semi_honest();
+	delete emp::backend;
 	delete io;
 }

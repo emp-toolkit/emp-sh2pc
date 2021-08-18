@@ -1,13 +1,15 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
 using namespace std;
+using Integer = Integer_T<SemiHonestGarbledCircuit::wire_t>;
+using Bit = Bit_T<SemiHonestGarbledCircuit::wire_t>;
 
 void test_millionare(int party, int number) {
 	Integer a(32, number, ALICE);
 	Integer b(32, number, BOB);
 	Bit res = a > b;
 
-	cout << "ALICE larger?\t"<< res.reveal<bool>()<<endl;
+	cout << "ALICE larger?\t"<< res.reveal()<<endl;
 }
 
 void test_sort(int party) {
@@ -47,10 +49,12 @@ int main(int argc, char** argv) {
 		num = atoi(argv[3]);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
-	setup_semi_honest(io, party);
+	if(party == ALICE) emp::backend = new SemiHonestGen<NetIO>(io);
+	else emp::backend = new SemiHonestEva<NetIO>(io);
+
 	test_millionare(party, num);
 //	test_sort(party);
-	cout << CircuitExecution::circ_exec->num_and()<<endl;
-	finalize_semi_honest();
+	cout << emp::backend->num_and()<<endl;
+	delete emp::backend;
 	delete io;
 }

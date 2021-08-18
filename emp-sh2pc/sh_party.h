@@ -5,23 +5,18 @@
 
 namespace emp {
 
-template<typename IO>
-class SemiHonestParty: public ProtocolExecution { public:
-	IO* io = nullptr;
-	IKNP<IO> * ot = nullptr;
+class SemiHonestGarbledCircuit { public:
+	typedef block wire_t;
 	PRG shared_prg;
-
 	block * buf = nullptr;
 	bool * buff = nullptr;
 	int top = 0;
 	int batch_size = 1024*16;
-
-	SemiHonestParty(IO * io, int party) : ProtocolExecution(party) {
-		this->io = io;
-		ot = new IKNP<IO>(io);
+	SemiHonestGarbledCircuit() {
 		buf = new block[batch_size];
 		buff = new bool[batch_size];
 	}
+
 	void set_batch_size(int size) {
 		delete[] buf;
 		delete[] buff;
@@ -30,10 +25,9 @@ class SemiHonestParty: public ProtocolExecution { public:
 		buff = new bool[batch_size];
 	}
 
-	~SemiHonestParty() {
+	~SemiHonestGarbledCircuit() {
 		delete[] buf;
 		delete[] buff;
-		delete ot;
 	}
 };
 }

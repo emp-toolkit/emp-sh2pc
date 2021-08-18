@@ -4,15 +4,21 @@
 
 namespace emp {
 template<typename IO>
-class SemiHonestEva: public SemiHonestParty<IO> { public:
-	HalfGateEva<IO> * gc;
+class SemiHonestEva: public SemiHonestGarbledCircuit,
+	public HalfGateEva<IO>  { public:
+	IKNP<IO> * ot = nullptr;
 	PRG prg;
-	SemiHonestEva(IO *io, HalfGateEva<IO> * gc): SemiHonestParty<IO>(io, BOB) {
-		this->gc = gc;	
+	SemiHonestEva(IO *io): HalfGateEva<IO>(io) {
+		ot = new IKNP<IO>(this->io);
 		this->ot->setup_recv();
 		block seed; this->io->recv_block(&seed, 1);
 		this->shared_prg.reseed(&seed);
 		refill();
+	}
+
+	~SemiHonestEva() {
+		if(ot != nullptr)
+			delete ot;
 	}
 
 	void refill() {
@@ -21,7 +27,8 @@ class SemiHonestEva: public SemiHonestParty<IO> { public:
 		this->top = 0;
 	}
 
-	void feed(block * label, int party, const bool* b, int length) {
+	void feed(void * in, int party, const bool* b, size_t length) override {
+		block * label = (block *)in;
 		if(party == ALICE) {
 			this->shared_prg.random_block(label, length);
 		} else {
@@ -52,7 +59,8 @@ class SemiHonestEva: public SemiHonestParty<IO> { public:
 		}
 	}
 
-	void reveal(bool * b, int party, const block * label, int length) {
+	void reveal(bool* b, int party, const void * in, size_t length) override {
+		const block * label = (const block *)in;
 		if (party == XOR) {
 			for (int i = 0; i < length; ++i)
 				b[i] = getLSB(label[i]);

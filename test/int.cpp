@@ -2,6 +2,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
 using namespace std;
+using Integer = Integer_T<SemiHonestGarbledCircuit::wire_t>;
 
 template<typename Op, typename Op2>
 void test_int(int party, int range1 = 1<<20, int range2 = 1<<20, int runs = 10000) {
@@ -34,15 +35,16 @@ void test_int(int party, int range1 = 1<<20, int range2 = 1<<20, int runs = 1000
 
 void scratch_pad() {
 	Integer a(32, 9, ALICE);
-	cout << "HW "<<a.hamming_weight().reveal<string>(PUBLIC)<<endl;
-	cout << "LZ "<<a.leading_zeros().reveal<string>(PUBLIC)<<endl;
+	cout << "HW "<<a.hamming_weight().reveal<uint64_t>(PUBLIC)<<endl;
+	cout << "LZ "<<a.leading_zeros().reveal<uint64_t>(PUBLIC)<<endl;
 }
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
 
-	setup_semi_honest(io, party);
+	if(party == ALICE) emp::backend = new SemiHonestGen<NetIO>(io);
+	else emp::backend = new SemiHonestEva<NetIO>(io);
 
 //	scratch_pad();return 0;
 	test_int<std::plus<int>, std::plus<Integer>>(party);
@@ -55,6 +57,6 @@ int main(int argc, char** argv) {
 	test_int<std::bit_or<int>, std::bit_or<Integer>>(party);
 	test_int<std::bit_xor<int>, std::bit_xor<Integer>>(party);
 
-	finalize_semi_honest();
+	delete emp::backend;
 	delete io;
 }

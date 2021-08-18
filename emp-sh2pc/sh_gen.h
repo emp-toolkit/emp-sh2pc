@@ -5,12 +5,14 @@
 namespace emp {
 
 template<typename IO>
-class SemiHonestGen: public SemiHonestParty<IO> { public:
-	HalfGateGen<IO> * gc;
-	SemiHonestGen(IO* io, HalfGateGen<IO>* gc): SemiHonestParty<IO>(io, ALICE) {
-		this->gc = gc;
+class SemiHonestGen: public SemiHonestGarbledCircuit, 
+	public HalfGateGen<IO> { public:
+	using HalfGateGen<IO>::delta;
+	IKNP<IO> * ot = nullptr;
+	SemiHonestGen(IO* io): HalfGateGen<IO>(io) {
+		ot = new IKNP<IO>(this->io);
 		bool delta_bool[128];
-		block_to_bool(delta_bool, gc->delta);
+		block_to_bool(delta_bool, delta);
 		this->ot->setup_send(delta_bool);
 		block seed;
 		PRG prg;
@@ -20,17 +22,23 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 		refill();
 	}
 
+	~SemiHonestGen() {
+		if(ot != nullptr)
+			delete ot;
+	}
+
 	void refill() {
 		this->ot->send_cot(this->buf, this->batch_size);
 		this->top = 0;
 	}
 
-	void feed(block * label, int party, const bool* b, int length) {
+	void feed(void * in, int party, const bool* b, size_t length) override {
+		block * label = (block *)in;
 		if(party == ALICE) {
 			this->shared_prg.random_block(label, length);
 			for (int i = 0; i < length; ++i) {
 				if(b[i])
-					label[i] = label[i] ^ gc->delta;
+					label[i] = label[i] ^ delta;
 			}
 		} else {
 			if (length > this->batch_size) {
@@ -51,13 +59,14 @@ class SemiHonestGen: public SemiHonestParty<IO> { public:
 				this->io->recv_data(tmp, length);
 				for (int i = 0; i < length; ++i)
 					if(tmp[i])
-						label[i] = label[i] ^ gc->delta;
+						label[i] = label[i] ^ delta;
 				delete[] tmp;
 			}
 		}
 	}
 
-	void reveal(bool* b, int party, const block * label, int length) {
+	void reveal(bool* b, int party, const void * in, size_t length) override {
+		const block * label = (const block *)in;
 		if (party == XOR) {
 			for (int i = 0; i < length; ++i)
 				b[i] = getLSB(label[i]);

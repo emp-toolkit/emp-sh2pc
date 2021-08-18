@@ -5,12 +5,14 @@
 #include <vector>
 using namespace std;
 using namespace emp;
+using Float = Float_T<SemiHonestGarbledCircuit::wire_t>; 
+using Bit = Bit_T<SemiHonestGarbledCircuit::wire_t>; 
 
 vector<std::string> test_str{"sqr", "sqrt", "sin", "cos", "exp2", "exp", "ln", "log2"};
 
 void print_float32(Float a) {
 	for(int i = 31; i >= 0; i--)
-		printf("%d", a[i].reveal<bool>());
+		printf("%d", a[i].reveal());
 	cout << endl;
 }
 
@@ -27,7 +29,7 @@ bool equal(Float a, float b) {
 	unsigned char *pb = (unsigned char*)(&b);
 	for(int i = 0; i < (int)sizeof(float); i++) {
 		for(int j = 0; j < 8; j++) {
-			pa[i] += (a[i*8+j].reveal<bool>())<<j;
+			pa[i] += (a[i*8+j].reveal())<<j;
 		}
 	}
 	if(memcmp(pa, pb, sizeof(float)) == 0)
@@ -128,12 +130,9 @@ void scratch_pad(double num) {
 
 	cout << "ultimate: ";
 	for(int i = x.size()-1; i >= 0; i--) {
-		cout << x.value[i].reveal<bool>(PUBLIC);
+		cout << x.value[i].reveal(PUBLIC);
 	}
 	cout << endl;
-
-	cout << "test reveal: ";
-	cout << x.reveal<string>() << " or " << x.reveal<double>() << endl << endl;
 }
 
 void fp_cmp(double a, double b) {
@@ -142,11 +141,11 @@ void fp_cmp(double a, double b) {
 	Float y(b, BOB);
 
 	Bit z = x.equal(y);
-	cout << z.reveal<bool>() << " ";
+	cout << z.reveal() << " ";
 	z = x.less_equal(y);
-	cout << z.reveal<bool>() << " ";
+	cout << z.reveal() << " ";
 	z = x.less_than(y);
-	cout << z.reveal<bool>() << endl;
+	cout << z.reveal() << endl;
 }
 
 void fp_if(double a, double b) {
@@ -157,9 +156,9 @@ void fp_if(double a, double b) {
 	Bit zero = Bit(false, PUBLIC); 
 
 	Float z = x.If(one, y);
-	cout << z.reveal<string>() << " ";
+	cout << z.reveal<double>() << " ";
 	z = x.If(zero, y);
-	cout << z.reveal<string>() << endl;
+	cout << z.reveal<double>() << endl;
 }
 
 void fp_abs(double a) {
@@ -167,15 +166,16 @@ void fp_abs(double a) {
 	Float x(a, ALICE);
 
 	Float z = x.abs();
-	cout << z.reveal<string>() << endl;
+	cout << z.reveal<double>() << endl;
 }
 
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
 	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
-	auto ctx = setup_semi_honest(io, party);
-	ctx->set_batch_size(1024*1024);//set larger BOB input processing batch size
+	if(party == ALICE) emp::backend = new SemiHonestGen<NetIO>(io);
+	else emp::backend = new SemiHonestEva<NetIO>(io);
+	((SemiHonestGarbledCircuit*)(emp::backend))->set_batch_size(1024*1024);//set larger BOB input processing batch size
 
 	cout << "Test function:" << endl;
 	fp_cmp(52.21875, 52.21875);
@@ -198,6 +198,7 @@ int main(int argc, char** argv) {
 	test_float(6, 1e-3, 1e12);
 	test_float(7, 1e-3, 1e12);
 
-	finalize_semi_honest();
+	delete emp::backend;
+	delete io;
 	return 0;
 }

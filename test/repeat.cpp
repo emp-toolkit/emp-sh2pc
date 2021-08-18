@@ -1,6 +1,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 using namespace emp;
 using namespace std;
+using Integer = Integer_T<SemiHonestGarbledCircuit::wire_t>;
 
 int party;
 int port = 12345;
@@ -8,11 +9,12 @@ NetIO * netio;
 void setup() {
 	usleep(100);
 	netio =  new emp::NetIO(party == emp::ALICE ? nullptr : "127.0.0.1", port, true);
-	emp::setup_semi_honest(netio, party,  1024);
+	if(party == ALICE) emp::backend = new SemiHonestGen<NetIO>(netio);
+	else emp::backend = new SemiHonestEva<NetIO>(netio);
 }
 void done() {
 	delete netio;
-	finalize_semi_honest();
+	delete emp::backend;
 }
 
 void test_int_reveal(int number) {
