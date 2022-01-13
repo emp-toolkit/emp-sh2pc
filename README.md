@@ -24,12 +24,12 @@
   
   `./bin/[binaries] 2 12345 [more opts]` on the other.
   
-  IP address is hardcoded in the test files.
+  IP addresses are hardcoded in the test files.
 
 * example_semi_honest should run as 
 	`./bin/example 1 12345 123 & ./bin/example 2 12345 124`
 	
-	because different parrties needs different numbers
+	because different parties need different numbers
 
 ### Question
 Please send email to wangxiao@cs.northwestern.edu
