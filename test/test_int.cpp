@@ -3,31 +3,40 @@
 using namespace emp;
 using namespace std;
 
+// CI-time: each `runs` iteration is one full 32-bit garbled-circuit op
+// over the network. Debug builds are ~100x slower, so cut to a smoke
+// count there; Release keeps the full coverage.
+#ifdef NDEBUG
+static constexpr int kRuns = 10000;
+#else
+static constexpr int kRuns = 100;
+#endif
+
+// UInt32 wraps mod 2^32 by spec, identical to native uint32_t — no
+// range filtering or overflow-mismatch loop needed. Just sample full
+// 32-bit inputs and compare.
 template<typename Op, typename Op2>
-void test_int(int party, int range1 = 1<<20, int range2 = 1<<20, int runs = 10000) {
+void test_int(int party, int runs = kRuns) {
 	PRG prg(fix_key);
 	for(int i = 0; i < runs; ++i) {
-		long long ia, ib;
-		prg.random_data_unaligned(&ia, 8);
-		prg.random_data_unaligned(&ib, 8);
-		ia %= range1;
-		ib %= range2;
-		while( Op()(int(ia), int(ib)) != Op()(ia, ib) ) {
-			prg.random_data_unaligned(&ia, 8);
-			prg.random_data_unaligned(&ib, 8);
-			ia %= range1;
-			ib %= range2;
-		}
-	
-		Integer a(32, ia, ALICE); 
-		Integer b(32, ib, BOB);
+		uint32_t ia, ib;
+		prg.random_data_unaligned(&ia, 4);
+		// Skip ib == 0 so divides / modulus don't hit native UB.
+		do {
+			prg.random_data_unaligned(&ib, 4);
+		} while (ib == 0);
 
-		Integer res = Op2()(a,b);
+		UInt32 a(ia, ALICE);
+		UInt32 b(ib, BOB);
 
-		if (res.reveal<int>(PUBLIC) != Op()(ia,ib)) {
-			cout << ia <<"\t"<<ib<<"\t"<<Op()(ia,ib)<<"\t"<<res.reveal<int>(PUBLIC)<<endl<<flush;
+		UInt32 res = Op2()(a,b);
+
+		uint32_t expected = Op()(ia, ib);
+		uint32_t actual   = res.reveal<uint32_t>(PUBLIC);
+		if (actual != expected) {
+			cout << ia <<"\t"<<ib<<"\t"<<expected<<"\t"<<actual<<endl<<flush;
 		}
-		assert(res.reveal<int>(PUBLIC) == Op()(ia,ib));
+		assert(actual == expected);
 	}
 	cout << typeid(Op2).name()<<"\t\t\tDONE"<<endl;
 }
@@ -39,15 +48,15 @@ int main(int argc, char** argv) {
 
 	setup_semi_honest(&io, party);
 
-	test_int<std::plus<int>, std::plus<Integer>>(party);
-	test_int<std::minus<int>, std::minus<Integer>>(party);
-	test_int<std::multiplies<int>, std::multiplies<Integer>>(party);
-	test_int<std::divides<int>, std::divides<Integer>>(party);
-	test_int<std::modulus<int>, std::modulus<Integer>>(party);
+	test_int<std::plus<uint32_t>,       std::plus<UInt32>>(party);
+	test_int<std::minus<uint32_t>,      std::minus<UInt32>>(party);
+	test_int<std::multiplies<uint32_t>, std::multiplies<UInt32>>(party);
+	test_int<std::divides<uint32_t>,    std::divides<UInt32>>(party);
+	test_int<std::modulus<uint32_t>,    std::modulus<UInt32>>(party);
 
-	test_int<std::bit_and<int>, std::bit_and<Integer>>(party);
-	test_int<std::bit_or<int>, std::bit_or<Integer>>(party);
-	test_int<std::bit_xor<int>, std::bit_xor<Integer>>(party);
+	test_int<std::bit_and<uint32_t>,    std::bit_and<UInt32>>(party);
+	test_int<std::bit_or<uint32_t>,     std::bit_or<UInt32>>(party);
+	test_int<std::bit_xor<uint32_t>,    std::bit_xor<UInt32>>(party);
 
 	finalize_semi_honest();
 }

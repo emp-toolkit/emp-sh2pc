@@ -8,6 +8,15 @@ using namespace emp;
 
 vector<std::string> test_str{"sqr", "sqrt", "sin", "cos", "exp2", "exp", "ln", "log2"};
 
+// CI-time: each `runs` iteration is one full 32-bit float circuit op
+// over the network. Debug builds are ~100x slower, so cut to a smoke
+// count there; Release keeps the full coverage.
+#ifdef NDEBUG
+static constexpr int kRuns = 1000;
+#else
+static constexpr int kRuns = 100;
+#endif
+
 void print_float32(Float a) {
 	for(int i = 31; i >= 0; i--)
 		printf("%d", a[i].reveal<bool>());
@@ -43,7 +52,7 @@ bool accurate(double a, double b, double err) {
 
 PRG prg(fix_key);
 template<typename Op, typename Op2>
-void test_float(double precision, int runs = 1000) {
+void test_float(double precision, int runs = kRuns) {
 	for(int i = 0; i < runs; ++i) {
 		int ia = 0, ib = 0;
 		prg.random_data_unaligned(&ia, 4);
@@ -71,7 +80,7 @@ void test_float(double precision, int runs = 1000) {
 	cout << typeid(Op2).name()<<"\t\t\tDONE"<<endl;
 }
 
-void test_float(int func_id, double precision, double minimize, int runs = 1000) {
+void test_float(int func_id, double precision, double minimize, int runs = kRuns) {
 	int rate_cnt = 0;
 	const double pi = std::acos(-1);
 	for(int i = 0; i < runs; ++i) {
