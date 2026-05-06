@@ -1,26 +1,29 @@
-#Testing macro
-macro (add_test_executable_with_lib _name libs)
-	add_executable(test_${_name} "${_name}.cpp")
-	target_link_libraries(test_${_name} ${EMP-OT_LIBRARIES})
-endmacro()
+function(add_test_case name)
+    add_executable(${name} ${name}.cpp)
+    target_link_libraries(${name} PRIVATE emp-sh2pc::emp-sh2pc)
+    set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+    add_test(NAME ${name}
+             COMMAND ${name}
+             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+endfunction()
 
-macro (add_test_case _name)
-	add_test_executable_with_lib(${_name} "")
-  	add_test(NAME ${_name} COMMAND "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_${_name}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/")
-endmacro()
+function(add_test_case_with_run name)
+    add_executable(${name} ${name}.cpp)
+    target_link_libraries(${name} PRIVATE emp-sh2pc::emp-sh2pc)
+    set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+    add_test(NAME ${name}
+             COMMAND ${PROJECT_SOURCE_DIR}/run $<TARGET_FILE:${name}>
+             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+endfunction()
 
-macro (add_test_case_with_run _name)
-	add_test_executable_with_lib(${_name} "")
-	add_test(NAME ${_name} COMMAND "./run" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_${_name}" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/")
-
-endmacro()
-
-# Test cases
-add_test_case_with_run(bit)
-add_test_case_with_run(int)
-IF(${ENABLE_FLOAT})
-add_test_case_with_run(float)
-ENDIF(${ENABLE_FLOAT})
-add_test_case_with_run(circuit_file)
-add_test_case_with_run(example)
-add_test_case_with_run(repeat)
+add_test_case_with_run(test_bit)
+add_test_case_with_run(test_int)
+if(ENABLE_FLOAT)
+    add_test_case_with_run(test_float)
+endif()
+add_test_case_with_run(test_circuit_file)
+add_test_case_with_run(test_example)
+add_test_case_with_run(test_repeat)
+add_test_case_with_run(test_aes)

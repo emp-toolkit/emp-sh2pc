@@ -1,78 +1,80 @@
 #ifndef EMP_SEMIHONEST_EVA_H__
 #define EMP_SEMIHONEST_EVA_H__
+#include <memory>
 #include "emp-sh2pc/sh_party.h"
 
 namespace emp {
-template<typename IO>
-class SemiHonestEva: public SemiHonestParty<IO> { public:
-	HalfGateEva<IO> * gc;
+
+class SemiHonestEva : public HalfGateEva, public SemiHonestParty {
+public:
 	PRG prg;
-	SemiHonestEva(IO *io, HalfGateEva<IO> * gc): SemiHonestParty<IO>(io, BOB) {
-		this->gc = gc;	
-		this->ot->setup_recv();
-		block seed; this->io->recv_block(&seed, 1);
-		this->shared_prg.reseed(&seed);
+
+	SemiHonestEva(IOChannel* io_, int batch_sz)
+	    : HalfGateEva(io_), SemiHonestParty(io_, batch_sz) {
+		ot->setup_recv();
+		block seed;
+		io->recv_block(&seed, 1);
+		shared_prg.reseed(&seed);
 		refill();
 	}
 
 	void refill() {
-		prg.random_bool(this->buff, this->batch_size);
-		this->ot->recv_cot(this->buf, this->buff, this->batch_size);
-		this->top = 0;
+		prg.random_bool(buff.get(), batch_size);
+		ot->recv_cot(buf.get(), buff.get(), batch_size);
+		top = 0;
 	}
 
-	void feed(block * label, int party, const bool* b, int length) {
-		if(party == ALICE) {
-			this->shared_prg.random_block(label, length);
+	void feed(void* out, int from_party, const bool* in, size_t length) override {
+		block* label = static_cast<block*>(out);
+		if (from_party == ALICE) {
+			shared_prg.random_block(label, length);
 		} else {
-			if (length > this->batch_size) {
-				this->ot->recv_cot(label, b, length);
+			if ((int)length > batch_size) {
+				ot->recv_cot(label, in, length);
 			} else {
-				bool * tmp = new bool[length];
-				if(length > this->batch_size - this->top) {
-					memcpy(label, this->buf + this->top, (this->batch_size-this->top)*sizeof(block));
-					memcpy(tmp, this->buff + this->top, (this->batch_size-this->top));
-					int filled = this->batch_size - this->top;
+				auto tmp = std::make_unique<bool[]>(length);
+				if ((int)length > batch_size - top) {
+					memcpy(label, buf.get() + top, (batch_size - top) * sizeof(block));
+					memcpy(tmp.get(), buff.get() + top, (batch_size - top));
+					int filled = batch_size - top;
 					refill();
-					memcpy(label+filled, this->buf, (length - filled)*sizeof(block));
-					memcpy(tmp+ filled, this->buff, length - filled);
-					this->top = length - filled;
+					memcpy(label + filled, buf.get(), (length - filled) * sizeof(block));
+					memcpy(tmp.get() + filled, buff.get(), length - filled);
+					top = length - filled;
 				} else {
-					memcpy(label, this->buf+this->top, length*sizeof(block));
-					memcpy(tmp, this->buff+this->top, length);
-					this->top+=length;
+					memcpy(label, buf.get() + top, length * sizeof(block));
+					memcpy(tmp.get(), buff.get() + top, length);
+					top += length;
 				}
 
-				for(int i = 0; i < length; ++i)
-					tmp[i] = (tmp[i] != b[i]); 
-				this->io->send_data(tmp, length);
-
-				delete[] tmp;
+				for (size_t i = 0; i < length; ++i)
+					tmp[i] = (tmp[i] != in[i]);
+				io->send_data(tmp.get(), length);
 			}
 		}
 	}
 
-	void reveal(bool * b, int party, const block * label, int length) {
-		if (party == XOR) {
-			for (int i = 0; i < length; ++i)
-				b[i] = getLSB(label[i]);
+	void reveal(bool* out, int to_party, const void* in, size_t length) override {
+		const block* label = static_cast<const block*>(in);
+		if (to_party == XOR) {
+			for (size_t i = 0; i < length; ++i)
+				out[i] = getLSB(label[i]);
 			return;
 		}
-		for (int i = 0; i < length; ++i) {
+		for (size_t i = 0; i < length; ++i) {
 			bool lsb = getLSB(label[i]), tmp;
-			if (party == BOB or party == PUBLIC) {
-				this->io->recv_data(&tmp, 1);
-				b[i] = (tmp != lsb);
-			} else if (party == ALICE) {
-				this->io->send_data(&lsb, 1);
-				b[i] = false;
+			if (to_party == BOB or to_party == PUBLIC) {
+				io->recv_data(&tmp, 1);
+				out[i] = (tmp != lsb);
+			} else if (to_party == ALICE) {
+				io->send_data(&lsb, 1);
+				out[i] = false;
 			}
 		}
-		if(party == PUBLIC)
-			this->io->send_data(b, length);
+		if (to_party == PUBLIC)
+			io->send_data(out, length);
 	}
-
 };
-}
 
-#endif// GARBLE_CIRCUIT_SEMIHONEST_H__
+}  // namespace emp
+#endif

@@ -1,42 +1,110 @@
 # emp-sh2pc
-![arm](https://github.com/emp-toolkit/emp-sh2pc/workflows/arm/badge.svg)
-![x86](https://github.com/emp-toolkit/emp-sh2pc/workflows/x86/badge.svg)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/emp-toolkit/emp-sh2pc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/emp-toolkit/emp-sh2pc/alerts/)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/emp-toolkit/emp-sh2pc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/emp-toolkit/emp-sh2pc/context:cpp)
+![build](https://github.com/emp-toolkit/emp-sh2pc/workflows/build/badge.svg)
+[![CodeQL](https://github.com/emp-toolkit/emp-sh2pc/actions/workflows/codeql.yml/badge.svg)](https://github.com/emp-toolkit/emp-sh2pc/actions/workflows/codeql.yml)
 
 <img src="https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/art/logo-full.jpg" width=300px/>
 
-# Installation
-1. `wget https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/scripts/install.py`
-2. `python install.py --deps --tool --ot --sh2pc`
-    1. You can use `--ot=[release]` to install a particular branch or release
-    2. By default it will build for Release. `-DCMAKE_BUILD_TYPE=[Release|Debug]` option is also available.
-    3. No sudo? Change [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/v2.8.8/cmake.html#variable%3aCMAKE_INSTALL_PREFIX).
+> **Which version do I want?**
+>
+> - **Existing projects pinned to a published release: stay on `0.3.0`** —
+>   branch [`v0.3.x`](https://github.com/emp-toolkit/emp-sh2pc/tree/v0.3.x).
+>   Bug fixes and security patches will be backported to `v0.3.x`.
+> - **New projects, or willing to migrate: track the development branch**
+>   (this branch, `main`). It will become `1.0.0-alpha` after a polish
+>   pass and then `1.0.0`. Builds against emp-tool / emp-ot ≥ 1.0
+>   (unified `Backend` execution layer, de-templated IO and OT) — but
+>   the API is not yet frozen and headers may move between alphas.
+>   Requires emp-tool ≥ 1.0.0-alpha and emp-ot ≥ 1.0.0-alpha.
+
+Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` / `BristolFormat` over a `NetIO` channel, with batched IKNP COT for input wires.
+
+## Requirements
+
+- CMake ≥ 3.21
+- A C++17 compiler (Clang ≥ 12, GCC ≥ 9, AppleClang 14+)
+- [emp-tool](https://github.com/emp-toolkit/emp-tool) ≥ 1.0
+- [emp-ot](https://github.com/emp-toolkit/emp-ot) ≥ 1.0
+- pthreads
+
+emp-sh2pc is header-only; the build produces test executables only.
+
+## Build and install
+
+emp-sh2pc consumes emp-tool and emp-ot through their installed CMake
+packages. Install both first, then build emp-sh2pc the same way:
+
+```bash
+# emp-tool
+git clone https://github.com/emp-toolkit/emp-tool.git
+cmake -S emp-tool -B emp-tool/build -DCMAKE_BUILD_TYPE=Release
+cmake --build emp-tool/build -j
+cmake --install emp-tool/build       # respects CMAKE_INSTALL_PREFIX
+
+# emp-ot
+git clone https://github.com/emp-toolkit/emp-ot.git
+cmake -S emp-ot -B emp-ot/build -DCMAKE_BUILD_TYPE=Release
+cmake --build emp-ot/build -j
+cmake --install emp-ot/build
+
+# emp-sh2pc
+git clone https://github.com/emp-toolkit/emp-sh2pc.git
+cmake -S emp-sh2pc -B emp-sh2pc/build -DCMAKE_BUILD_TYPE=Release
+cmake --build emp-sh2pc/build -j
+cmake --install emp-sh2pc/build
+```
+
+If you don't want to install the dependencies, point emp-sh2pc directly
+at sibling build trees:
+
+```bash
+cmake -S emp-sh2pc -B emp-sh2pc/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -Demp-tool_DIR=$PWD/emp-tool/build \
+      -Demp-ot_DIR=$PWD/emp-ot/build
+cmake --build emp-sh2pc/build -j
+```
 
 ## Test
 
-* If you want to test the code in local machine, type
+Tests live under `test/` and ship as executables in `build/`. Both
+parties run on `localhost` for local testing, joined by the `./run`
+wrapper script.
 
-   `./run ./bin/[binaries] 12345 [more opts]`
-* IF you want to test the code over two machine, type
+* Local machine, both parties on `localhost`:
 
-  `./bin/[binaries] 1 12345 [more opts]` on one machine and 
-  
-  `./bin/[binaries] 2 12345 [more opts]` on the other.
-  
-  IP addresses are hardcoded in the test files.
+  `./run ./build/[binary] [more opts]`
 
-* example_semi_honest should run as 
-	`./bin/example 1 12345 123 & ./bin/example 2 12345 124`
-	
-	because different parties need different numbers
+  e.g. `./run ./build/test_bit` or
+       `./run ./build/test_example 123`.
 
-### Question
+* Two machines (IP addresses hardcoded in the test source):
+
+  `./build/[binary] 1 12345 [more opts]` on one machine and
+  `./build/[binary] 2 12345 [more opts]` on the other.
+
+* `test_example` takes a per-party integer; the two parties must use
+  different numbers:
+
+  `./build/test_example 1 12345 123 & ./build/test_example 2 12345 124`
+
+`ctest --test-dir build --output-on-failure` runs the entire suite.
+
+## Library use
+
+Downstream CMake projects link against the `emp-sh2pc::emp-sh2pc`
+INTERFACE target, which transitively brings in
+`emp-ot::emp-ot` and `emp-tool::emp-tool`:
+
+```cmake
+find_package(emp-sh2pc 1.0 REQUIRED)
+target_link_libraries(my-app PRIVATE emp-sh2pc::emp-sh2pc)
+```
+
+## Question
 Please send email to wangxiao@cs.northwestern.edu
 
 ## Acknowledgement
 This work was supported in part by the National Science Foundation under Awards #1111599 and #1563722.
-
 
 ## License
 

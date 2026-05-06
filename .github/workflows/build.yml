@@ -1,0 +1,62 @@
+name: build
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        build_type: [Debug, Release]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Locate OpenSSL (macOS)
+        if: runner.os == 'macOS'
+        run: echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> "$GITHUB_ENV"
+
+      - name: Read emp-tool ref
+        id: tool_dep
+        run: echo "ref=$(cat .github/workflows/emp-tool.dep)" >> "$GITHUB_OUTPUT"
+
+      - name: Read emp-ot ref
+        id: ot_dep
+        run: echo "ref=$(cat .github/workflows/emp-ot.dep)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and install emp-tool sibling
+        run: |
+          git clone --depth 1 --branch "${{ steps.tool_dep.outputs.ref }}" \
+            https://github.com/emp-toolkit/emp-tool.git "$RUNNER_TEMP/emp-tool"
+          cmake -S "$RUNNER_TEMP/emp-tool" -B "$RUNNER_TEMP/emp-tool/build" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install" \
+            -DEMP_TOOL_NATIVE_ARCH=OFF \
+            -DEMP_TOOL_BUILD_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/emp-tool/build" -j
+          cmake --install "$RUNNER_TEMP/emp-tool/build"
+
+      - name: Build and install emp-ot sibling
+        run: |
+          git clone --depth 1 --branch "${{ steps.ot_dep.outputs.ref }}" \
+            https://github.com/emp-toolkit/emp-ot.git "$RUNNER_TEMP/emp-ot"
+          cmake -S "$RUNNER_TEMP/emp-ot" -B "$RUNNER_TEMP/emp-ot/build" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install" \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install" \
+            -DEMP_OT_BUILD_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/emp-ot/build" -j
+          cmake --install "$RUNNER_TEMP/emp-ot/build"
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_PREFIX_PATH=${{ runner.temp }}/install
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

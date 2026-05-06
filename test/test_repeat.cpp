@@ -4,14 +4,14 @@ using namespace std;
 
 int party;
 int port = 12345;
-NetIO * netio;
+std::unique_ptr<NetIO> netio;
 void setup() {
 	usleep(100);
-	netio =  new emp::NetIO(party == emp::ALICE ? nullptr : "127.0.0.1", port, true);
-	emp::setup_semi_honest(netio, party,  1024);
+	netio = std::make_unique<emp::NetIO>(party == emp::ALICE ? nullptr : "127.0.0.1", port, true);
+	emp::setup_semi_honest(netio.get(), party, 1024);
 }
 void done() {
-	delete netio;
+	netio.reset();
 	finalize_semi_honest();
 }
 

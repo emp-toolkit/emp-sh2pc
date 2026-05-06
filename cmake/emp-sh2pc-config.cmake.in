@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(emp-ot 1.0)
+
+include("${CMAKE_CURRENT_LIST_DIR}/emp-sh2pcTargets.cmake")
+
+check_required_components(emp-sh2pc)

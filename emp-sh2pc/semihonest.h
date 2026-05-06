@@ -5,24 +5,25 @@
 
 namespace emp {
 
-template<typename IO>
-inline SemiHonestParty<IO>* setup_semi_honest(IO* io, int party, int batch_size = 1024*16) {
-	if(party == ALICE) {
-		HalfGateGen<IO> * t = new HalfGateGen<IO>(io);
-		CircuitExecution::circ_exec = t;
-		ProtocolExecution::prot_exec = new SemiHonestGen<IO>(io, t);
+inline SemiHonestParty* setup_semi_honest(IOChannel* io, int party,
+                                          int batch_size = 1024 * 16) {
+	if (party == ALICE) {
+		auto* g = new SemiHonestGen(io, batch_size);
+		backend = g;
+		return static_cast<SemiHonestParty*>(g);
 	} else {
-		HalfGateEva<IO> * t = new HalfGateEva<IO>(io);
-		CircuitExecution::circ_exec = t;
-		ProtocolExecution::prot_exec = new SemiHonestEva<IO>(io, t);
+		auto* e = new SemiHonestEva(io, batch_size);
+		backend = e;
+		return static_cast<SemiHonestParty*>(e);
 	}
-	return (SemiHonestParty<IO>*)ProtocolExecution::prot_exec;
 }
 
 inline void finalize_semi_honest() {
-	delete CircuitExecution::circ_exec;
-	delete ProtocolExecution::prot_exec;
+	if (!backend) return;
+	backend->finalize();
+	delete backend;
+	backend = nullptr;
 }
 
-}
+}  // namespace emp
 #endif

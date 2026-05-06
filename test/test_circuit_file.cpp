@@ -13,18 +13,17 @@ void test() {
 	Integer b(128, 3, BOB);
 	Integer c(128, 1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
-			cf.compute((block*)c.bits.data(), (block*)a.bits.data(), (block*)b.bits.data());
+			cf.compute(c.bits.data(), a.bits.data(), b.bits.data());
 	}
 	cout << time_from(start)<<" "<<party<<" "<<c.reveal<string>(BOB)<<endl;
 
 }
 int main(int argc, char** argv) {
 	parse_party_and_port(argv, &party, &port);
-	NetIO* io = new NetIO(party==ALICE?nullptr:"127.0.0.1", port);
+	NetIO io(party==ALICE?nullptr:"127.0.0.1", port);
 
-	setup_semi_honest(io, party);
+	setup_semi_honest(&io, party);
 	test();
-	
+
 	finalize_semi_honest();
-	delete io;
 }

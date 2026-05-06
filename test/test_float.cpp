@@ -46,8 +46,8 @@ template<typename Op, typename Op2>
 void test_float(double precision, int runs = 1000) {
 	for(int i = 0; i < runs; ++i) {
 		int ia = 0, ib = 0;
-		prg.random_data(&ia, 4);
-		prg.random_data(&ib, 4);
+		prg.random_data_unaligned(&ia, 4);
+		prg.random_data_unaligned(&ib, 4);
 		float da = (float)(ia) / 10000000.0;
 		float db = (float)(ib) / 10000000.0;
 
@@ -76,7 +76,7 @@ void test_float(int func_id, double precision, double minimize, int runs = 1000)
 	const double pi = std::acos(-1);
 	for(int i = 0; i < runs; ++i) {
 		long ia;
-		prg.random_data(&ia, sizeof(long));
+		prg.random_data_unaligned(&ia, sizeof(long));
 		float da = ia / minimize;
 		Float a(da, ALICE);
 		Float res = Float(0.0, PUBLIC);
@@ -156,9 +156,9 @@ void fp_if(double a, double b) {
 	Bit one = Bit(true, PUBLIC);
 	Bit zero = Bit(false, PUBLIC); 
 
-	Float z = x.If(one, y);
+	Float z = x.select(one, y);
 	cout << z.reveal<string>() << " ";
-	z = x.If(zero, y);
+	z = x.select(zero, y);
 	cout << z.reveal<string>() << endl;
 }
 
@@ -173,8 +173,8 @@ void fp_abs(double a) {
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
-	NetIO * io = new NetIO(party==ALICE ? nullptr : "127.0.0.1", port);
-	auto ctx = setup_semi_honest(io, party);
+	NetIO io(party==ALICE ? nullptr : "127.0.0.1", port);
+	auto ctx = setup_semi_honest(&io, party);
 	ctx->set_batch_size(1024*1024);//set larger BOB input processing batch size
 
 	cout << "Test function:" << endl;

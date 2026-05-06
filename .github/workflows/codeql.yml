@@ -1,0 +1,77 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: "12 6 * * 2"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ cpp ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Read emp-tool ref
+        id: tool_dep
+        run: echo "ref=$(cat .github/workflows/emp-tool.dep)" >> "$GITHUB_OUTPUT"
+
+      - name: Read emp-ot ref
+        id: ot_dep
+        run: echo "ref=$(cat .github/workflows/emp-ot.dep)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and install emp-tool sibling
+        run: |
+          git clone --depth 1 --branch "${{ steps.tool_dep.outputs.ref }}" \
+            https://github.com/emp-toolkit/emp-tool.git "$RUNNER_TEMP/emp-tool"
+          cmake -S "$RUNNER_TEMP/emp-tool" -B "$RUNNER_TEMP/emp-tool/build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install" \
+            -DEMP_TOOL_NATIVE_ARCH=OFF \
+            -DEMP_TOOL_BUILD_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/emp-tool/build" -j
+          cmake --install "$RUNNER_TEMP/emp-tool/build"
+
+      - name: Build and install emp-ot sibling
+        run: |
+          git clone --depth 1 --branch "${{ steps.ot_dep.outputs.ref }}" \
+            https://github.com/emp-toolkit/emp-ot.git "$RUNNER_TEMP/emp-ot"
+          cmake -S "$RUNNER_TEMP/emp-ot" -B "$RUNNER_TEMP/emp-ot/build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install" \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install" \
+            -DEMP_OT_BUILD_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/emp-ot/build" -j
+          cmake --install "$RUNNER_TEMP/emp-ot/build"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-and-quality
+
+      - name: Build
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install"
+          cmake --build build -j
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

@@ -78,9 +78,9 @@ void test_bit() {
 int main(int argc, char** argv) {
 	int port;
 	parse_party_and_port(argv, &party, &port);
-	io = new NetIO(party==ALICE?nullptr:"127.0.0.1", port);
+	NetIO netio(party==ALICE?nullptr:"127.0.0.1", port);
+	io = &netio;
 	setup_semi_honest(io, party);
 	test_bit();
 	finalize_semi_honest();
-	delete io;
 }
