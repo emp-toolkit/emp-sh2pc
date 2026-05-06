@@ -108,9 +108,4 @@ This work was supported in part by the National Science Foundation under Awards 
 
 ## License
 
-This project is dual-licensed under either of the following licenses:
-
-- MIT License ([LICENSE-MIT](LICENSE-MIT))
-- Apache License 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
-
-You may choose either license when using this software.
+Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
