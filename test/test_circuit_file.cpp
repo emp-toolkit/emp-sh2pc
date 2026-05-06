@@ -9,9 +9,12 @@ BristolFormat cf(file.c_str());
 
 void test() {
 	auto start = clock_start();
-	Integer a(128, 2, ALICE);
-	Integer b(128, 3, BOB);
-	Integer c(128, 1, PUBLIC);
+	// 128-bit width but `int`-typed value — cast to __int128 so the
+	// BitVec_T ctor's bits_to_bools(&value, 128 bits) reads a full
+	// 16 zero-extended bytes instead of 12 bytes of stack garbage.
+	Integer a(128, (__int128)2, ALICE);
+	Integer b(128, (__int128)3, BOB);
+	Integer c(128, (__int128)1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
 			cf.compute(c.bits.data(), a.bits.data(), b.bits.data());
 	}

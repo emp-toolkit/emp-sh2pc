@@ -9,9 +9,14 @@ int main(int argc, char** argv) {
 	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
 	setup_semi_honest(&io, party);
 
-	Integer plaintext(128, 0, ALICE);
-	Integer key(128, 0, BOB);
-	Integer ciphertext(128, 0, PUBLIC);
+	// Cast the literal to __int128 so the (size_t, T, int) ctor copies
+	// a full 16 bytes — passing a plain `0` (int) makes BitVec_T's
+	// `bits_to_bools(tmp, &value, 128)` read 12 bytes of stack garbage
+	// past the int, producing party-specific non-zero inputs that just
+	// happen to be all-zero on some hosts.
+	Integer plaintext(128, (__int128)0, ALICE);
+	Integer key(128, (__int128)0, BOB);
+	Integer ciphertext(128, (__int128)0, PUBLIC);
 
 	AES_Calculator aes;
 	aes.encrypt_with_key(plaintext.bits.data(),
