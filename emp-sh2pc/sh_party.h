@@ -30,8 +30,8 @@ public:
 	int top = 0;
 	int batch_size;
 
-	SemiHonestParty(IOChannel* io_, int batch_sz)
-	    : ot(std::make_unique<IKNP>(io_, /*malicious=*/false)),
+	SemiHonestParty(int party, IOChannel* io_, int batch_sz)
+	    : ot(std::make_unique<IKNP>(party, io_, /*malicious=*/false)),
 	      buf(std::make_unique<block[]>(batch_sz)),
 	      buff(std::make_unique<bool[]>(batch_sz)),
 	      batch_size(batch_sz) {}

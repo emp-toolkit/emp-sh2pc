@@ -8,7 +8,7 @@ namespace emp {
 class SemiHonestGen : public HalfGateGen, public SemiHonestParty {
 public:
 	SemiHonestGen(IOChannel* io_, int batch_sz)
-	    : HalfGateGen(io_), SemiHonestParty(io_, batch_sz) {
+	    : HalfGateGen(io_), SemiHonestParty(ALICE, io_, batch_sz) {
 		// IKNP requires Δ as bool[128] with bit 0 = 1. HalfGateGen's
 		// ctor already pinned bit 0 of `delta` via set_bit, so the
 		// invariant holds by construction.
@@ -16,7 +16,7 @@ public:
 		const uint8_t* d = reinterpret_cast<const uint8_t*>(&this->delta);
 		for (int i = 0; i < 128; ++i)
 			delta_bool[i] = (d[i / 8] >> (i % 8)) & 1;
-		ot->setup_send(delta_bool);
+		ot->set_delta(delta_bool);
 
 		block seed;
 		PRG().random_block(&seed, 1);

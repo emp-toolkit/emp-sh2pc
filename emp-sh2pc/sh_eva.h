@@ -10,8 +10,9 @@ public:
 	PRG prg;
 
 	SemiHonestEva(IOChannel* io_, int batch_sz)
-	    : HalfGateEva(io_), SemiHonestParty(io_, batch_sz) {
-		ot->setup_recv();
+	    : HalfGateEva(io_), SemiHonestParty(BOB, io_, batch_sz) {
+		// IKNP receiver has no Δ; bootstrap fires lazily on first
+		// recv_cot inside `refill()` below.
 		block seed;
 		io->recv_block(&seed, 1);
 		shared_prg.reseed(&seed);
