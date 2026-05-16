@@ -50,7 +50,11 @@ bool accurate(double a, double b, double err) {
 	else return false;
 }
 
-PRG prg(fix_key);
+// Shared test seed: ALICE samples it fresh per run, sends to BOB, so
+// both sides draw the same float inputs without depending on a
+// hard-coded public constant. Default-constructed here; reseeded after
+// the io is open in main().
+PRG prg;
 template<typename Op, typename Op2>
 void test_float(double precision, int runs = kRuns) {
 	for(int i = 0; i < runs; ++i) {
@@ -183,6 +187,20 @@ int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
 	NetIO io(party==ALICE ? nullptr : "127.0.0.1", port);
+
+	// Agree on the PRG seed: ALICE draws fresh randomness and sends;
+	// BOB receives. Done before setup_semi_honest so it doesn't get
+	// folded into the garbled-circuit transcript.
+	block test_seed;
+	if (party == ALICE) {
+		PRG().random_block(&test_seed, 1);
+		io.send_data(&test_seed, sizeof(block));
+	} else {
+		io.recv_data(&test_seed, sizeof(block));
+	}
+	io.flush();
+	prg.reseed(&test_seed);
+
 	auto ctx = setup_semi_honest(&io, party);
 	ctx->set_batch_size(1024*1024);//set larger BOB input processing batch size
 

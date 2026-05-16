@@ -12,12 +12,17 @@ static constexpr int kRuns = 10000;
 static constexpr int kRuns = 100;
 #endif
 
+// Shared test seed: ALICE samples it fresh per run, sends to BOB, so
+// both sides draw the same (uint32_t, uint32_t) pairs without depending
+// on a hard-coded public constant.
+static block test_seed;
+
 // UInt32 wraps mod 2^32 by spec, identical to native uint32_t — no
 // range filtering or overflow-mismatch loop needed. Just sample full
 // 32-bit inputs and compare.
 template<typename Op, typename Op2>
 void test_int(int party, int runs = kRuns) {
-	PRG prg(fix_key);
+	PRG prg(&test_seed);
 	for(int i = 0; i < runs; ++i) {
 		uint32_t ia, ib;
 		prg.random_data_unaligned(&ia, 4);
@@ -45,6 +50,17 @@ int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
 	NetIO io(party==ALICE ? nullptr : "127.0.0.1", port);
+
+	// Agree on the PRG seed for matched test inputs: ALICE draws fresh
+	// randomness and sends; BOB receives. Done before setup_semi_honest
+	// so it doesn't get folded into the garbled-circuit transcript.
+	if (party == ALICE) {
+		PRG().random_block(&test_seed, 1);
+		io.send_data(&test_seed, sizeof(block));
+	} else {
+		io.recv_data(&test_seed, sizeof(block));
+	}
+	io.flush();
 
 	setup_semi_honest(&io, party);
 
