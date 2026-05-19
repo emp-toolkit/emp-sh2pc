@@ -26,7 +26,7 @@ public:
 	}
 
 	void refill() {
-		ot->send_cot(buf.get(), batch_size);
+		ot->rcot(buf.get(), batch_size);
 		top = 0;
 	}
 
@@ -40,7 +40,16 @@ public:
 			}
 		} else {
 			if ((int)length > batch_size) {
-				ot->send_cot(label, length);
+				// RCOT + receiver-driven 1-bit correction: receiver xors its
+				// PRG-derived choice with Bob's real input bit; we flip the
+				// "0" label whenever the correction bit is 1.
+				ot->rcot(label, length);
+				auto tmp = std::make_unique<bool[]>(length);
+				io->recv_bool(tmp.get(), length);
+				for (size_t i = 0; i < length; ++i) {
+					if (tmp[i])
+						label[i] = label[i] ^ this->delta;
+				}
 			} else {
 				auto tmp = std::make_unique<bool[]>(length);
 				if ((int)length > batch_size - top) {
@@ -54,7 +63,7 @@ public:
 					top += length;
 				}
 
-				io->recv_data(tmp.get(), length);
+				io->recv_bool(tmp.get(), length);
 				for (size_t i = 0; i < length; ++i) {
 					if (tmp[i])
 						label[i] = label[i] ^ this->delta;
