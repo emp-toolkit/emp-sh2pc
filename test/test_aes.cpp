@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 	if (memcmp(actual, expected, 16) != 0)
 		error("AES ciphertext mismatch");
 	cout << "AES OK" << endl;
-	cout << io.counter << endl;
+	cout << io.send_counter << endl;
 
 	finalize_semi_honest();
 }
