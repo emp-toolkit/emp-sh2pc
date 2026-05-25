@@ -1,10 +1,13 @@
 #include "emp-sh2pc/emp-sh2pc.h"
+
+// Bind the circuit aliases to this backend wire (emp-tool sets no default).
+EMP_USE_CIRCUIT_TYPES_ALL(block);
 using namespace emp;
 using namespace std;
 
 void test_millionare(int party, int number) {
-	Integer a(32, number, ALICE);
-	Integer b(32, number, BOB);
+	SignedInt a(32, number, ALICE);
+	SignedInt b(32, number, BOB);
 	Bit res = a > b;
 
 	cout << "ALICE larger?\t"<< res.reveal<bool>()<<endl;
@@ -12,15 +15,15 @@ void test_millionare(int party, int number) {
 
 void test_sort(int party) {
 	int size = 100;
-	std::vector<Integer> A(size);
-	std::vector<Integer> B(size);
-	std::vector<Integer> res(size);
+	std::vector<SignedInt> A(size);
+	std::vector<SignedInt> B(size);
+	std::vector<SignedInt> res(size);
 
 	for(int i = 0; i < size; ++i)
-		A[i] = Integer(32, rand()%102400, ALICE);
+		A[i] = SignedInt(32, rand()%102400, ALICE);
 
 	for(int i = 0; i < size; ++i)
-		B[i] = Integer(32, rand()%102400, BOB);
+		B[i] = SignedInt(32, rand()%102400, BOB);
 
 	for(int i = 0; i < size; ++i)
 		res[i] = A[i] ^ B[i];

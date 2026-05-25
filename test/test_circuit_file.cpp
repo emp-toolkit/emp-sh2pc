@@ -1,4 +1,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
+
+// Bind the circuit aliases to this backend wire (emp-tool sets no default).
+EMP_USE_CIRCUIT_TYPES_ALL(block);
 using namespace emp;
 using namespace std;
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
@@ -12,9 +15,9 @@ void test() {
 	// 128-bit width but `int`-typed value — cast to __int128 so the
 	// BitVec_T ctor's bits_to_bools(&value, 128 bits) reads a full
 	// 16 zero-extended bytes instead of 12 bytes of stack garbage.
-	Integer a(128, (__int128)2, ALICE);
-	Integer b(128, (__int128)3, BOB);
-	Integer c(128, (__int128)1, PUBLIC);
+	SignedInt a(128, (__int128)2, ALICE);
+	SignedInt b(128, (__int128)3, BOB);
+	SignedInt c(128, (__int128)1, PUBLIC);
 	for(int i = 0; i < 10000; ++i) {
 			cf.compute(c.bits.data(), a.bits.data(), b.bits.data());
 	}

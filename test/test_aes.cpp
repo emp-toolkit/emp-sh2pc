@@ -1,5 +1,8 @@
 #include <cstring>
 #include "emp-sh2pc/emp-sh2pc.h"
+
+// Bind the circuit aliases to this backend wire (emp-tool sets no default).
+EMP_USE_CIRCUIT_TYPES_ALL(block);
 using namespace emp;
 using namespace std;
 
@@ -14,9 +17,9 @@ int main(int argc, char** argv) {
 	// `bits_to_bools(tmp, &value, 128)` read 12 bytes of stack garbage
 	// past the int, producing party-specific non-zero inputs that just
 	// happen to be all-zero on some hosts.
-	Integer plaintext(128, (__int128)0, ALICE);
-	Integer key(128, (__int128)0, BOB);
-	Integer ciphertext(128, (__int128)0, PUBLIC);
+	SignedInt plaintext(128, (__int128)0, ALICE);
+	SignedInt key(128, (__int128)0, BOB);
+	SignedInt ciphertext(128, (__int128)0, PUBLIC);
 
 	AES_Calculator aes;
 	aes.encrypt_with_key(plaintext.bits.data(),

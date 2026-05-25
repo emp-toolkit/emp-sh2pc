@@ -1,4 +1,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
+
+// Bind the circuit aliases to this backend wire (emp-tool sets no default).
+EMP_USE_CIRCUIT_TYPES_ALL(block);
 using namespace emp;
 using namespace std;
 NetIO * io;

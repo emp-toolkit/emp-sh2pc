@@ -1,4 +1,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
+
+// Bind the circuit aliases to this backend wire (emp-tool sets no default).
+EMP_USE_CIRCUIT_TYPES_ALL(block);
 using namespace emp;
 using namespace std;
 
@@ -17,10 +20,10 @@ void done() {
 
 void test_int_reveal(int number) {
 	setup();
-	Integer a(32, number, ALICE);
-	Integer b;
+	SignedInt a(32, number, ALICE);
+	SignedInt b;
 	for(int i = 0; i < 1000; ++i)
-		b = Integer(32, number+1, BOB);
+		b = SignedInt(32, number+1, BOB);
 	int32_t aa = a.reveal<int32_t>(PUBLIC);
 	int32_t bb = b.reveal<int32_t>(PUBLIC);
 
