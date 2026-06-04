@@ -1,13 +1,12 @@
 #include <typeinfo>
 #include "emp-sh2pc/emp-sh2pc.h"
 
-// Bind the circuit aliases to this backend wire (emp-tool sets no default).
-EMP_USE_CIRCUIT_TYPES_ALL(block);
 #include <iostream>
 #include <cmath>
 #include <vector>
 using namespace std;
 using namespace emp;
+using namespace emp::block_types;
 
 vector<std::string> test_str{"sqr", "sqrt", "sin", "cos", "exp2", "exp", "ln", "log2"};
 
