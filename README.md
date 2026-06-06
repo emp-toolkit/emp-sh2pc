@@ -16,7 +16,7 @@
 >   the API is not yet frozen and headers may move between alphas.
 >   Requires emp-tool ≥ 1.0.0-alpha and emp-ot ≥ 1.0.0-alpha.
 
-Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` / `BristolFormat` over a `NetIO` channel, with batched IKNP COT for input wires.
+Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` over a `NetIO` channel, with batched IKNP COT for input wires.
 
 ## Requirements
 

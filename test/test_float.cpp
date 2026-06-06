@@ -1,14 +1,16 @@
 #include <typeinfo>
 #include "emp-sh2pc/emp-sh2pc.h"
 
+#include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <cstring>
 #include <vector>
 using namespace std;
 using namespace emp;
 using namespace emp::block_types;
 
-vector<std::string> test_str{"sqr", "sqrt", "sin", "cos", "exp2", "exp", "ln", "log2"};
+vector<std::string> test_str{"sqr", "sqrt", "recip", "rsqrt"};
 
 // CI-time: each `runs` iteration is one full 32-bit float circuit op
 // over the network. Debug builds are ~100x slower, so cut to a smoke
@@ -58,7 +60,8 @@ bool accurate(double a, double b, double err) {
 // the io is open in main().
 PRG prg;
 template<typename Op, typename Op2>
-void test_float(double precision, int runs = kRuns) {
+bool test_float(double precision, int runs = kRuns) {
+	int bad = 0;
 	for(int i = 0; i < runs; ++i) {
 		int ia = 0, ib = 0;
 		prg.random_data_unaligned(&ia, 4);
@@ -74,21 +77,22 @@ void test_float(double precision, int runs = kRuns) {
 			if (not accurate(res.reveal<double>(PUBLIC), Op()(da,db), precision)) {
 				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\n";
 				cout << "\t\t\t"<<"\t"<< a.reveal<double>(PUBLIC) <<"\t"<<b.reveal<double>(PUBLIC)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
-				return;
+				++bad;
 			}
 		} else {
 			if (not equal(res, Op()(da,db))) {
 				cout << "Inaccuracy:\t"<<typeid(Op2).name()<<"\t"<< da <<"\t"<<db<<"\t"<<Op()(da,db)<<"\n";
 				cout << "\t\t\t"<<"\t"<< a.reveal<double>(PUBLIC) <<"\t"<<b.reveal<double>(PUBLIC)<<"\t"<<res.reveal<double>(PUBLIC)<<endl<<flush;
+				++bad;
 			}
 		}
 	}
-	cout << typeid(Op2).name()<<"\t\t\tDONE"<<endl;
+	cout << typeid(Op2).name()<<"\t\t\tDONE  -  "<<(bad ? "FAIL" : "ok")<<endl;
+	return bad == 0;
 }
 
-void test_float(int func_id, double precision, double minimize, int runs = kRuns) {
+bool test_float_unary(int func_id, double precision, double minimize, int runs = kRuns) {
 	int rate_cnt = 0;
-	const double pi = std::acos(-1);
 	for(int i = 0; i < runs; ++i) {
 		long ia;
 		prg.random_data_unaligned(&ia, sizeof(long));
@@ -97,29 +101,17 @@ void test_float(int func_id, double precision, double minimize, int runs = kRuns
 		Float res = Float(0.0, PUBLIC);
 		float comp = 0.0;
 		switch(func_id) {
-			case 3: res = a.cos();
-				comp = std::cos(da*pi);
-				break;
 			case 0: res = a.sqr();
-				comp = std::pow(da, 2.0);
+				comp = da * da;
 				break;
 			case 1: res = a.abs().sqrt();
 				comp = std::sqrt(da>0?da:(-da));
 				break;
-			case 2: res = a.sin();
-				comp = std::sin(da*pi);
+			case 2: res = a.recip();
+				comp = 1.0f / da;
 				break;
-			case 4: res = a.exp2();
-				comp = std::exp2(da);
-				break;
-			case 5: res = a.exp();
-				comp = std::exp(da);
-				break;
-			case 6: res = a.abs().ln();
-				comp = std::log(da>0?da:(-da));
-				break;
-			case 7: res = a.abs().log2();
-				comp = std::log2(da>0?da:(-da));
+			case 3: res = a.abs().rsqrt();
+				comp = 1.0f / std::sqrt(da>0?da:(-da));
 				break;
 		}
 		if(precision == 0.0) {
@@ -135,6 +127,7 @@ void test_float(int func_id, double precision, double minimize, int runs = kRuns
 		}
 	}
 	cout << "function " << test_str[func_id] <<"\t\t\tDONE"<<"  -  accuracy : "<<(1.0-(float)rate_cnt/runs)<<endl;
+	return rate_cnt == 0;
 }
 
 void scratch_pad(double num) {
@@ -185,6 +178,35 @@ void fp_abs(double a) {
 	cout << z.reveal<string>() << endl;
 }
 
+bool fp_supported_smoke() {
+	int bad = 0;
+	auto chk = [&](const char* label, double got, double want) {
+		if (std::fabs(got - want) > 1e-9 * std::max(1.0, std::fabs(want))) {
+			cout << label << " got " << got << " want " << want << endl;
+			++bad;
+		}
+	};
+	auto chkb = [&](const char* label, bool got, bool want) {
+		if (got != want) {
+			cout << label << " got " << got << " want " << want << endl;
+			++bad;
+		}
+	};
+
+	Float a(2.0f, ALICE), b(-3.0f, BOB), c(4.0f, PUBLIC), z(0.0f, PUBLIC);
+	chk("neg",      (-a).reveal<double>(PUBLIC), -2.0);
+	chk("copysign", a.copysign(b).reveal<double>(PUBLIC), -2.0);
+	chk("min",      a.min(b).reveal<double>(PUBLIC), -3.0);
+	chk("max",      a.max(b).reveal<double>(PUBLIC), 2.0);
+	chk("fma",      a.fma(b, c).reveal<double>(PUBLIC), -2.0);
+	chkb("ge",      a.greater_equal(b).reveal<bool>(PUBLIC), true);
+	chkb("iszero",  z.is_zero().reveal<bool>(PUBLIC), true);
+	chkb("isinf",   a.is_inf().reveal<bool>(PUBLIC), false);
+	chkb("isnan",   a.is_nan().reveal<bool>(PUBLIC), false);
+	cout << "supported float smoke\t\tDONE  -  " << (bad ? "FAIL" : "ok") << endl;
+	return bad == 0;
+}
+
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
@@ -214,18 +236,19 @@ int main(int argc, char** argv) {
 	fp_abs(24.422432);
 
 	cout << endl << "Test accuracy:" << endl;
-	test_float<std::plus<float>, std::plus<Float>>(0.0);
-	test_float<std::minus<float>, std::minus<Float>>(0.0);
-	test_float<std::multiplies<float>, std::multiplies<Float>>(0.0);
-	test_float<std::divides<float>, std::divides<Float>>(0.0);
-	test_float(0, 0.0, 1e12);
-	test_float(1, 0.0, 1e12);
-	test_float(2, 1e-3, 1e15);
-	test_float(3, 1e-3, 1e15);	
-	test_float(4, 1e-3, 1e18);
-	test_float(5, 1e-3, 1e18);
-	test_float(6, 1e-3, 1e12);
-	test_float(7, 1e-3, 1e12);
+	bool ok = true;
+	ok &= test_float<std::plus<float>, std::plus<Float>>(0.0);
+	ok &= test_float<std::minus<float>, std::minus<Float>>(0.0);
+	ok &= test_float<std::multiplies<float>, std::multiplies<Float>>(0.0);
+	ok &= test_float<std::divides<float>, std::divides<Float>>(0.0);
+	ok &= test_float_unary(0, 0.0, 1e12);
+	ok &= test_float_unary(1, 0.0, 1e12);
+	ok &= test_float_unary(2, 0.0, 1e12);
+	ok &= test_float_unary(3, 0.0, 1e12);
+	ok &= fp_supported_smoke();
+
+	if (!ok)
+		error("test_float failed");
 
 	finalize_semi_honest();
 	return 0;

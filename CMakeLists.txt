@@ -46,14 +46,6 @@ target_include_directories(emp-sh2pc INTERFACE
 
 target_link_libraries(emp-sh2pc INTERFACE emp-ot::emp-ot)
 
-# circuit_file.cpp loads bristol_format/AES-non-expanded.txt via
-# macro_xstr(EMP_CIRCUIT_PATH). emp-tool main no longer defines this,
-# so derive it from the imported emp-tool include directory.
-get_target_property(_emp_tool_inc emp-tool::emp-tool INTERFACE_INCLUDE_DIRECTORIES)
-list(GET _emp_tool_inc 0 _emp_tool_inc0)
-target_compile_definitions(emp-sh2pc INTERFACE
-    EMP_CIRCUIT_PATH=${_emp_tool_inc0}/emp-tool/circuits/files)
-
 # ---------------------------------------------------------------------
 # Install + export
 # ---------------------------------------------------------------------
