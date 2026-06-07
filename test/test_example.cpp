@@ -1,48 +1,31 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 
 using namespace emp;
-using namespace emp::block_types;
 using namespace std;
 
-void test_millionare(int party, int number) {
-	SignedInt a(32, number, ALICE);
-	SignedInt b(32, number, BOB);
-	Bit res = a > b;
+// Native SH2PCContext port: the millionaires' comparison on signed 32-bit
+// inputs, plus the running AND-gate count from the session.
 
-	cout << "ALICE larger?\t"<< res.reveal<bool>()<<endl;
-}
+using SI = Int<SH2PCContext, 32>;
 
-void test_sort(int party) {
-	int size = 100;
-	std::vector<SignedInt> A(size);
-	std::vector<SignedInt> B(size);
-	std::vector<SignedInt> res(size);
+void test_millionare(SH2PCSession& sess, SH2PCContext& ctx, int number) {
+	SI a = sess.input<SI>(ctx, ALICE, (int64_t)number);
+	SI b = sess.input<SI>(ctx, BOB,   (int64_t)number);
+	Bit<SH2PCContext> res = a > b;
 
-	for(int i = 0; i < size; ++i)
-		A[i] = SignedInt(32, rand()%102400, ALICE);
-
-	for(int i = 0; i < size; ++i)
-		B[i] = SignedInt(32, rand()%102400, BOB);
-
-	for(int i = 0; i < size; ++i)
-		res[i] = A[i] ^ B[i];
-
-	sort(res.data(), size);
-	for(int i = 0; i < 100; ++i)
-		cout << res[i].reveal<int32_t>()<<endl;
+	cout << "ALICE larger?\t" << sess.reveal(res, PUBLIC) << endl;
 }
 
 int main(int argc, char** argv) {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
 	int num = 20;
-	if(argc > 3)
-		num = atoi(argv[3]);
-	NetIO io(party==ALICE ? nullptr : "127.0.0.1", port);
+	if (argc > 3) num = atoi(argv[3]);
+	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
 
-	setup_semi_honest(&io, party);
-	test_millionare(party, num);
-//	test_sort(party);
-	cout << backend->num_and()<<endl;
-	finalize_semi_honest();
+	SH2PCSession sess(&io, party);
+	SH2PCContext ctx(sess);
+	test_millionare(sess, ctx, num);
+	cout << sess.num_and() << endl;
+	sess.finalize();
 }

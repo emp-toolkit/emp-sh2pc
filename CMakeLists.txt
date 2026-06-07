@@ -38,7 +38,9 @@ find_package(emp-ot 1.0 REQUIRED)
 add_library(emp-sh2pc INTERFACE)
 add_library(emp-sh2pc::emp-sh2pc ALIAS emp-sh2pc)
 
-target_compile_features(emp-sh2pc INTERFACE cxx_std_17)
+# sh2pc_session.h publicly includes the C++20 BooleanContext surface
+# (emp-tool/circuits/{context,typed}.h), so consumers must build as C++20.
+target_compile_features(emp-sh2pc INTERFACE cxx_std_20)
 
 target_include_directories(emp-sh2pc INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -80,8 +82,10 @@ if(EMP_SH2PC_INSTALL)
         DESTINATION ${_cmake_install_dir})
 endif()
 
-# Build-tree export so siblings can consume without `make install`.
-export(EXPORT emp-sh2pcTargets
+# Build-tree export so siblings can consume without `make install`. Use the
+# export(TARGETS ...) form (not export(EXPORT ...)) so it works regardless of
+# whether install rules registered an export set (EMP_SH2PC_INSTALL=OFF).
+export(TARGETS emp-sh2pc
        NAMESPACE emp-sh2pc::
        FILE      ${CMAKE_CURRENT_BINARY_DIR}/emp-sh2pcTargets.cmake)
 
