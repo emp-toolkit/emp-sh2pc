@@ -21,7 +21,7 @@ Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-to
 ## Requirements
 
 - CMake ≥ 3.21
-- A C++17 compiler (Clang ≥ 12, GCC ≥ 9, AppleClang 14+)
+- A C++20 compiler (Clang ≥ 14, GCC ≥ 10, AppleClang 14+)
 - [emp-tool](https://github.com/emp-toolkit/emp-tool) ≥ 1.0
 - [emp-ot](https://github.com/emp-toolkit/emp-ot) ≥ 1.0
 - pthreads

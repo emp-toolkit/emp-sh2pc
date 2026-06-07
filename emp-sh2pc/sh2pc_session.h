@@ -1,30 +1,33 @@
 #ifndef EMP_SH2PC_SESSION_H__
 #define EMP_SH2PC_SESSION_H__
 
-// Native semi-honest 2PC Session + Context for the BooleanContext model.
-// SH2PCSession owns ALL protocol state — IO, IKNP-OT, Delta, the synchronized
-// PRG, the half-gate MITCCRH/constants, and the COT refill buffer — plus typed
-// input<T>() / reveal<T>(). SH2PCContext borrows the session and realizes the
-// BooleanContext gate ops directly (value-return, no global emp::backend, no
-// Backend virtual dispatch): AND via halfgates_garble/eval, XOR/NOT/const over
-// the session's labels. This is the sole semi-honest path: the old
-// SemiHonestGen/Eva diamond and setup_semi_honest global-backend installer have
-// been removed.
+// Native semi-honest 2PC context for the BooleanContext model. SH2PCCtx is the
+// SINGLE user-facing handle: it owns ALL protocol state — IO, IKNP-OT, Delta, the
+// synchronized PRG, the half-gate MITCCRH/constants, and the COT refill buffer —
+// IS a BooleanContext (value-return gate ops: AND via halfgates_garble/eval,
+// XOR/NOT/const over the labels; no global emp::backend, no virtual dispatch), and
+// exposes typed input<T>() / reveal<T>(). One object:
 //
-// Encapsulation: the protocol fields are private. The only intentional API is
-// party(), num_and(), input/reveal, and the raw bit I/O. SH2PCContext is a
-// friend (it reads delta/constants/mitccrh/io to garble); the session is a
-// friend of the context (to bounds-check that a typed value/context belongs to
-// THIS session before touching the wire/protocol).
+//     SH2PCCtx ctx(io, party);
+//     using UInt32 = UInt_T<SH2PCCtx, 32>;
+//     auto a = ctx.input<UInt32>(ALICE, x);
+//     auto z = a + b;                       // eager half-gate
+//     auto out = ctx.reveal(z, PUBLIC);
+//
+// SH2PCCtx is the semi-honest 2PC context. Protocol fields are private; the only
+// API is the gate ops (for typed values), input/reveal, the raw bit I/O, party(),
+// num_and().
 
 #include "emp-tool/emp-tool.h"
 #include "emp-tool/circuits/context.h"
 #include "emp-tool/circuits/typed.h"
+#include "emp-tool/circuits/value_traits.h"   // value_traits<T>: width/encode/decode
 #include "emp-tool/execution/half_gate.h"   // halfgates_garble / halfgates_eval
 #include "emp-tool/crypto/mitccrh.h"
 #include "emp-ot/emp-ot.h"
 #include <cstring>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace emp {
@@ -36,12 +39,16 @@ struct SHWire {
     bool operator!=(const SHWire& r) const { return !(*this == r); }
 };
 
-class SH2PCContext;   // fwd
-
-class SH2PCSession {
+class SH2PCCtx {
 public:
-    SH2PCSession(IOChannel* io, int party, int batch_sz = 1024 * 16)
+    using Wire = SHWire;
+
+    SH2PCCtx(IOChannel* io, int party, int batch_sz = 1024 * 16)
         : party_(party), io_(io), batch_size_(batch_sz) {
+        if (party_ != ALICE && party_ != BOB)
+            error("SH2PCCtx: party must be ALICE or BOB");
+        if (io_ == nullptr) error("SH2PCCtx: io channel must not be null");
+        if (batch_size_ <= 0) error("SH2PCCtx: batch size must be positive");
         if (party_ == ALICE) {
             block tmp[2];
             PRG().random_block(tmp, 2);
@@ -78,11 +85,63 @@ public:
     // AND-gate count so far (mitccrh advances gid by 2 per garbled AND).
     uint64_t num_and() const { return mitccrh_.gid / 2; }
 
-    // ---- typed I/O (the only way values enter/leave a circuit) ----
+    // ---- BooleanContext gate ops (value-return; drive the typed values) ----
+    Wire public_bit(bool b)        { return SHWire{ constant_[b] }; }
+    Wire xor_gate(Wire a, Wire b)  { return SHWire{ a.label ^ b.label }; }
+    Wire not_gate(Wire a)          { return SHWire{ a.label ^ constant_[1] }; }
+    Wire and_gate(Wire a, Wire b)  {
+        if (party_ == ALICE) {
+            block table[2];
+            block w = halfgates_garble(a.label, a.label ^ delta_,
+                                       b.label, b.label ^ delta_, delta_, table, &mitccrh_);
+            io_->send_block(table, 2);
+            return SHWire{ w };
+        } else {
+            block table[2];
+            io_->recv_block(table, 2);
+            return SHWire{ halfgates_eval(a.label, b.label, table, &mitccrh_) };
+        }
+    }
+
+    // ---- typed I/O (the only way clear values enter / leave a circuit) ----
+    // input<T>(owner, clear): T is a value type over THIS context, e.g.
+    // UInt_T<SH2PCCtx,32>. Called by both parties; only `owner`'s clear is used.
     template <class T, class Clear>
-    T input(SH2PCContext& ctx, int owner, Clear clear);
+    T input(int owner, Clear clear) {
+        static_assert(std::is_same_v<typename T::context_type, SH2PCCtx>,
+            "SH2PCCtx::input<T>: T must be a value type over SH2PCCtx (e.g. UInt_T<SH2PCCtx,32>)");
+        const int W = value_traits<T>::width();
+        std::vector<bool> e = value_traits<T>::encode(clear);
+        // Always enforced (not debug-only): a short/long encoding is a codec bug;
+        // never silently pad — wrong input bits would corrupt the result.
+        if (e.size() != (size_t)W) error("SH2PCCtx::input: T::encode width != T::width()");
+        std::vector<block> lab(W);
+        // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
+        auto bb = std::make_unique<bool[]>(W);
+        for (int i = 0; i < W; ++i) bb[i] = (bool)e[i];
+        feed_(lab.data(), owner, bb.get(), (size_t)W);
+        std::vector<SHWire> wires(W);
+        for (int i = 0; i < W; ++i) wires[i].label = lab[i];
+        return T::from_wires(*this, wires.data());
+    }
+
+    // reveal<T>(v, recipient): open to recipient (ALICE/BOB/PUBLIC/XOR-share).
     template <class T>
-    auto reveal(const T& v, int recipient);
+    auto reveal(const T& v, int recipient) {
+        static_assert(std::is_same_v<typename T::context_type, SH2PCCtx>,
+            "SH2PCCtx::reveal<T>: T must be a value type over SH2PCCtx");
+#if EMP_CONTEXT_CHECKS
+        if (v.context() != this) error("SH2PCCtx::reveal: value is bound to a different context");
+#endif
+        const int W = value_traits<T>::width();
+        std::vector<SHWire> wires(W);
+        v.pack_wires(wires.data());
+        std::vector<block> lab(W);
+        for (int i = 0; i < W; ++i) lab[i] = wires[i].label;
+        auto bb = std::make_unique<bool[]>(W);
+        reveal_(bb.get(), recipient, lab.data(), (size_t)W);
+        return value_traits<T>::decode(bb.get());
+    }
 
     // ---- raw-bit I/O: width-agnostic, for values past the 64-bit clear codec
     // (e.g. 128-bit AES blocks) or hand-assembled wire vectors. ----
@@ -100,8 +159,6 @@ public:
     }
 
 private:
-    friend class SH2PCContext;
-
     int party_;
     IOChannel* io_;
     block constant_[2];
@@ -123,15 +180,14 @@ private:
 
     // feed `length` input bits owned by `from_party` into `label` (block labels).
     // PUBLIC is a public constant (both parties build the same constant labels, no
-    // OT — neither party's value can override it); ALICE/BOB are private inputs
-    // (faithful merge of SemiHonestGen::feed / SemiHonestEva::feed).
+    // OT — neither party's value can override it); ALICE/BOB are private inputs.
     void feed_(block* label, int from_party, const bool* in, size_t length) {
         if (from_party == PUBLIC) {
             for (size_t i = 0; i < length; ++i) label[i] = constant_[in[i] ? 1 : 0];
             return;
         }
         if (from_party != ALICE && from_party != BOB)
-            error("SH2PCSession: input owner must be ALICE, BOB, or PUBLIC");
+            error("SH2PCCtx: input owner must be ALICE, BOB, or PUBLIC");
         if (party_ == ALICE) {
             if (from_party == ALICE) {
                 shared_prg_.random_block(label, length);
@@ -181,8 +237,9 @@ private:
         }
     }
 
-    // Faithful merge of SemiHonestGen::reveal / SemiHonestEva::reveal.
     void reveal_(bool* out, int to_party, const block* label, size_t length) {
+        if (to_party != XOR && to_party != ALICE && to_party != BOB && to_party != PUBLIC)
+            error("SH2PCCtx::reveal: recipient must be ALICE, BOB, PUBLIC, or XOR");
         if (to_party == XOR) {
             for (size_t i = 0; i < length; ++i) out[i] = getLSB(label[i]);
             return;
@@ -205,70 +262,7 @@ private:
     }
 };
 
-// BooleanContext over the session — no global backend, no virtual dispatch.
-class SH2PCContext {
-public:
-    using Wire = SHWire;
-    explicit SH2PCContext(SH2PCSession& sess) : s(&sess) {}
-
-    Wire public_bit(bool b)        { return SHWire{ s->constant_[b] }; }
-    Wire xor_gate(Wire a, Wire b)  { return SHWire{ a.label ^ b.label }; }
-    Wire not_gate(Wire a)          { return SHWire{ a.label ^ s->constant_[1] }; }
-    Wire and_gate(Wire a, Wire b)  {
-        if (s->party_ == ALICE) {
-            block table[2];
-            block w = halfgates_garble(a.label, a.label ^ s->delta_,
-                                       b.label, b.label ^ s->delta_, s->delta_, table, &s->mitccrh_);
-            s->io_->send_block(table, 2);
-            return SHWire{ w };
-        } else {
-            block table[2];
-            s->io_->recv_block(table, 2);
-            return SHWire{ halfgates_eval(a.label, b.label, table, &s->mitccrh_) };
-        }
-    }
-
-private:
-    friend class SH2PCSession;   // for I/O-boundary checks (ctx.s == session)
-    SH2PCSession* s;
-};
-
-static_assert(BooleanContext<SH2PCContext>);
-
-template <class T, class Clear>
-inline T SH2PCSession::input(SH2PCContext& ctx, int owner, Clear clear) {
-#if EMP_CONTEXT_CHECKS
-    if (ctx.s != this) error("SH2PCSession::input: context is bound to a different session");
-#endif
-    const int W = T::width();
-    std::vector<bool> e = T::encode(clear);
-#ifndef NDEBUG
-    if (e.size() != (size_t)W) error("SH2PCSession::input: T::encode width != T::width()");
-#endif
-    std::vector<block> lab(W);
-    // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
-    auto bb = std::make_unique<bool[]>(W);
-    for (int i = 0; i < W; ++i) bb[i] = (i < (int)e.size()) ? (bool)e[i] : false;
-    feed_(lab.data(), owner, bb.get(), (size_t)W);
-    std::vector<SHWire> wires(W);
-    for (int i = 0; i < W; ++i) wires[i].label = lab[i];
-    return T::from_wires(ctx, wires.data());
-}
-
-template <class T>
-inline auto SH2PCSession::reveal(const T& v, int recipient) {
-#if EMP_CONTEXT_CHECKS
-    if (!v.context() || v.context()->s != this) error("SH2PCSession::reveal: value is bound to a different session/context");
-#endif
-    const int W = T::width();
-    std::vector<SHWire> wires(W);
-    v.pack_wires(wires.data());
-    std::vector<block> lab(W);
-    for (int i = 0; i < W; ++i) lab[i] = wires[i].label;
-    auto bb = std::make_unique<bool[]>(W);
-    reveal_(bb.get(), recipient, lab.data(), (size_t)W);
-    return T::decode(bb.get());
-}
+static_assert(BooleanContext<SH2PCCtx>);
 
 }  // namespace emp
 #endif  // EMP_SH2PC_SESSION_H__

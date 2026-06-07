@@ -9,7 +9,7 @@
 using namespace std;
 using namespace emp;
 
-// Native SH2PCContext port of the float suite. Float32 arithmetic / comparison /
+// Native SH2PCCtx port of the float suite. Float32 arithmetic / comparison /
 // classifier ops replay the fp32_*.empbc builtins through the value-return
 // garbled backend; sign-bit ops (abs/neg/copysign) and select are local wiring.
 
@@ -19,14 +19,13 @@ static constexpr int kRuns = 1000;
 static constexpr int kRuns = 100;
 #endif
 
-using F = Float<SH2PCContext, 32>;
+using F = Float_T<SH2PCCtx, 32>;
 
-static SH2PCSession* g_sess;
-static SH2PCContext* g_ctx;
+static SH2PCCtx* g_ctx;
 
-static F finput(int owner, float v) { return g_sess->input<F>(*g_ctx, owner, v); }
-static float frev(const F& x) { return g_sess->reveal(x, PUBLIC); }
-static bool brev(const Bit<SH2PCContext>& b) { return g_sess->reveal(b, PUBLIC); }
+static F finput(int owner, float v) { return g_ctx->input<F>(owner, v); }
+static float frev(const F& x) { return g_ctx->reveal(x, PUBLIC); }
+static bool brev(const Bit_T<SH2PCCtx>& b) { return g_ctx->reveal(b, PUBLIC); }
 
 // bit-exact: the on-disk circuits are correctly-rounded, so a passing op
 // reproduces the host float bit-for-bit (incl. NaN/Inf patterns).
@@ -101,8 +100,8 @@ void fp_cmp(double a, double b) {
 void fp_if(double a, double b) {
 	cout << "if true/false: " << a << " " << b << " - ";
 	F x = finput(ALICE, (float)a), y = finput(BOB, (float)b);
-	Bit<SH2PCContext> one = Bit<SH2PCContext>::constant(*g_ctx, true);
-	Bit<SH2PCContext> zero = Bit<SH2PCContext>::constant(*g_ctx, false);
+	Bit_T<SH2PCCtx> one = Bit_T<SH2PCCtx>::constant(*g_ctx, true);
+	Bit_T<SH2PCCtx> zero = Bit_T<SH2PCCtx>::constant(*g_ctx, false);
 	cout << frev(x.select(one, y)) << " " << frev(x.select(zero, y)) << endl;
 }
 
@@ -155,9 +154,7 @@ int main(int argc, char** argv) {
 	prg.reseed(&test_seed);
 
 	// Larger BOB-input COT batch keeps repeated float ops off the refill path.
-	SH2PCSession sess(&io, party, 1024 * 1024);
-	SH2PCContext ctx(sess);
-	g_sess = &sess;
+	SH2PCCtx ctx(&io, party, 1024 * 1024);
 	g_ctx = &ctx;
 
 	cout << "Test function:" << endl;
@@ -181,6 +178,6 @@ int main(int argc, char** argv) {
 
 	if (!ok) error("test_float failed");
 
-	sess.finalize();
+	ctx.finalize();
 	return 0;
 }

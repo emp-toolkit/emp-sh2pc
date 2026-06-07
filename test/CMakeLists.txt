@@ -1,4 +1,4 @@
-# All tests now target the native SH2PCContext (BooleanContext) layer, which is
+# All tests now target the native SH2PCCtx (BooleanContext) layer, which is
 # C++20. The garbled-backend tests run two-party via ${PROJECT_SOURCE_DIR}/run.
 function(add_test_case name)
     add_executable(${name} ${name}.cpp)

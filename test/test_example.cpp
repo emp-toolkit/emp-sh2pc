@@ -3,17 +3,17 @@
 using namespace emp;
 using namespace std;
 
-// Native SH2PCContext port: the millionaires' comparison on signed 32-bit
-// inputs, plus the running AND-gate count from the session.
+// Native SH2PCCtx port: the millionaires' comparison on signed 32-bit
+// inputs, plus the running AND-gate count from the context.
 
-using SI = Int<SH2PCContext, 32>;
+using SI = Int_T<SH2PCCtx, 32>;
 
-void test_millionare(SH2PCSession& sess, SH2PCContext& ctx, int number) {
-	SI a = sess.input<SI>(ctx, ALICE, (int64_t)number);
-	SI b = sess.input<SI>(ctx, BOB,   (int64_t)number);
-	Bit<SH2PCContext> res = a > b;
+void test_millionare(SH2PCCtx& ctx, int number) {
+	SI a = ctx.input<SI>(ALICE, (int64_t)number);
+	SI b = ctx.input<SI>(BOB,   (int64_t)number);
+	Bit_T<SH2PCCtx> res = a > b;
 
-	cout << "ALICE larger?\t" << sess.reveal(res, PUBLIC) << endl;
+	cout << "ALICE larger?\t" << ctx.reveal(res, PUBLIC) << endl;
 }
 
 int main(int argc, char** argv) {
@@ -23,9 +23,8 @@ int main(int argc, char** argv) {
 	if (argc > 3) num = atoi(argv[3]);
 	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
 
-	SH2PCSession sess(&io, party);
-	SH2PCContext ctx(sess);
-	test_millionare(sess, ctx, num);
-	cout << sess.num_and() << endl;
-	sess.finalize();
+	SH2PCCtx ctx(&io, party);
+	test_millionare(ctx, num);
+	cout << ctx.num_and() << endl;
+	ctx.finalize();
 }
