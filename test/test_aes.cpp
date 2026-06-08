@@ -2,7 +2,7 @@
 #include <vector>
 #include <span>
 #include "emp-sh2pc/emp-sh2pc.h"
-#include "emp-tool/circuits/builtin_circuit_files.h"   // builtin_circuit("aes128")
+#include "emp-tool/ir/builtins.h"   // builtin_circuit("aes128")
 
 using namespace emp;
 using namespace std;

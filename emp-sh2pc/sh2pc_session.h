@@ -19,7 +19,7 @@
 // num_and().
 
 #include "emp-tool/emp-tool.h"
-#include "emp-tool/circuits/context.h"
+#include "emp-tool/context/context.h"
 #include "emp-tool/circuits/typed.h"
 #include "emp-tool/circuits/value_traits.h"   // value_traits<T>: width/encode/decode
 #include "emp-tool/execution/half_gate.h"   // halfgates_garble / halfgates_eval
