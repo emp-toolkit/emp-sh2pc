@@ -7,7 +7,7 @@
 using namespace emp;
 using namespace std;
 
-// Native SH2PCCtx port: AES-128 as IR replay of aes128.empbc
+// AES-128 over SH2PCSession: IR replay of aes128.empbc
 // (256 inputs = plaintext(128) ‖ key(128) -> 128 ciphertext bits), driven
 // through the value-return garbled backend. FIPS test vector for the all-zero
 // plaintext/key.
@@ -17,20 +17,20 @@ int main(int argc, char** argv) {
 	parse_party_and_port(argv, &party, &port);
 	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
 
-	SH2PCCtx ctx(&io, party);
+	SH2PCSession sess(&io, party);
 
 	bool zero[128];
 	for (int i = 0; i < 128; ++i) zero[i] = false;
-	std::vector<SHWire> pt  = ctx.input_bits(ALICE, zero, 128);  // plaintext = 0^128
-	std::vector<SHWire> key = ctx.input_bits(BOB,   zero, 128);  // key       = 0^128
+	std::vector<SHWire> pt  = sess.input_bits(ALICE, zero, 128);  // plaintext = 0^128
+	std::vector<SHWire> key = sess.input_bits(BOB,   zero, 128);  // key       = 0^128
 
 	std::vector<SHWire> in(256);
 	for (int i = 0; i < 128; ++i) { in[i] = pt[i]; in[128 + i] = key[i]; }
-	std::vector<SHWire> ct = execute_program(ctx, circuit::builtin_circuit("aes128"),
+	std::vector<SHWire> ct = execute_program(sess.ctx(), circuit::builtin_circuit("aes128"),
 	                                         std::span<const SHWire>(in.data(), 256));
 
 	bool obits[128];
-	ctx.reveal_bits(obits, PUBLIC, ct.data(), 128);
+	sess.reveal_bits(obits, PUBLIC, ct.data(), 128);
 
 	// AES-128(plaintext = 0^128, key = 0^128) FIPS vector; byte 0 first, LSB at
 	// bit 0 within each byte — matches the recorded circuit's output ordering.
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	if (memcmp(actual, expected, 16) != 0)
 		error("AES ciphertext mismatch");
 	cout << "AES OK" << endl;
-	cout << ctx.num_and() << endl;
+	cout << sess.num_and() << endl;
 
-	ctx.finalize();
+	sess.finalize();
 }

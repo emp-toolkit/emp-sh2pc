@@ -1,5 +1,6 @@
-# All tests now target the native SH2PCCtx (BooleanContext) layer, which is
-# C++20. The garbled-backend tests run two-party via ${PROJECT_SOURCE_DIR}/run.
+# All tests target the SH2PCSession public handle over its SH2PCCtx gate context
+# (BooleanContext), which is C++20. The garbled tests run two-party via
+# ${PROJECT_SOURCE_DIR}/run; the concept gate is a single-process compile check.
 function(add_test_case name)
     add_executable(${name} ${name}.cpp)
     target_link_libraries(${name} PRIVATE emp-sh2pc::emp-sh2pc)
@@ -32,3 +33,4 @@ add_test_case_with_run(test_repeat)
 add_test_case_with_run(test_aes)
 add_test_case_with_run(test_context_sh2pc)
 add_test_case_with_run(test_circuit_fn_sh2pc)
+add_test_case(test_session_concepts_sh2pc)

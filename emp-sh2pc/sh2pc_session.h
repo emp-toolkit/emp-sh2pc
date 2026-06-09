@@ -1,54 +1,59 @@
 #ifndef EMP_SH2PC_SESSION_H__
 #define EMP_SH2PC_SESSION_H__
 
-// Native semi-honest 2PC context for the BooleanContext model. SH2PCCtx is the
-// SINGLE user-facing handle: it owns ALL protocol state — IO, IKNP-OT, Delta, the
+// SH2PCSession — the public handle for semi-honest 2PC (garbled circuits), the
+// SH2PC peer of ClearSession. It owns ALL protocol state — IO, IKNP-OT, Delta, the
 // synchronized PRG, the half-gate MITCCRH/constants, and the COT refill buffer —
-// IS a BooleanContext (value-return gate ops: AND via halfgates_garble/eval,
-// XOR/NOT/const over the labels; no global emp::backend, no virtual dispatch), and
-// exposes typed input<T>() / reveal<T>(). One object:
+// and the I/O boundary (input / reveal); sess.ctx() is the gate context values are
+// built over. Gates are eager (an AND garbles/evaluates as it is called), so there
+// is no chunk/checkpoint model: a value's wire IS the live garbled label.
 //
-//     SH2PCCtx ctx(io, party);
-//     using UInt32 = UInt_T<SH2PCCtx, 32>;
-//     auto a = ctx.input<UInt32>(ALICE, x);
-//     auto z = a + b;                       // eager half-gate
-//     auto out = ctx.reveal(z, PUBLIC);
+//   SH2PCSession sess(io, party);
+//   using UInt32 = SH2PCSession::UInt<32>;
+//   auto a = sess.input<UInt32>(ALICE, x);
+//   auto b = sess.input<UInt32>(BOB,   y);
+//   auto c = a + b;                          // eager half-gate over sess.ctx()
+//   auto out = sess.reveal(c, PUBLIC);       // open the result
 //
-// SH2PCCtx is the semi-honest 2PC context. Protocol fields are private; the only
-// API is the gate ops (for typed values), input/reveal, the raw bit I/O, party(),
-// num_and().
+// Public constants stay value/context-level: UInt32::constant(sess.ctx(), 7).
+// There is no global backend and no virtual dispatch — the session is explicit.
 
+#include "emp-sh2pc/sh2pc_ctx.h"                 // SHWire, SH2PCCtx
 #include "emp-tool/emp-tool.h"
 #include "emp-tool/context/context.h"
-#include "emp-tool/circuits/typed.h"
-#include "emp-tool/circuits/value_traits.h"   // value_traits<T>: width/encode/decode
-#include "emp-tool/execution/half_gate.h"   // halfgates_garble / halfgates_eval
+#include "emp-tool/circuits/typed.h"             // Bit_T / UInt_T / Int_T / Float_T / BitVec_T
+#include "emp-tool/circuits/value_traits.h"      // value_traits<T>: width/encode/decode
+#include "emp-tool/session/concept.h"            // CircuitSession / SessionIO
 #include "emp-tool/crypto/mitccrh.h"
 #include "emp-ot/emp-ot.h"
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
 namespace emp {
 
-// Garbled-label wire, wrapped so it is std::regular (raw block is not).
-struct SHWire {
-    block label{};
-    bool operator==(const SHWire& r) const { return std::memcmp(&label, &r.label, sizeof(block)) == 0; }
-    bool operator!=(const SHWire& r) const { return !(*this == r); }
-};
-
-class SH2PCCtx {
+class SH2PCSession {
 public:
-    using Wire = SHWire;
+    using Ctx = SH2PCCtx;
+    template <int N> using UInt   = UInt_T<Ctx, N>;
+    template <int N> using Int    = Int_T<Ctx, N>;
+    template <int N> using BitVec = BitVec_T<Ctx, N>;
+    template <int W> using Float  = Float_T<Ctx, W>;
+    using Bit = Bit_T<Ctx>;
+    // reveal returns std::optional<clear_t> (the session contract): the value is
+    // present only on a party that learns it — every party for PUBLIC, the named
+    // recipient for ALICE/BOB, both parties (each its own share) for an XOR reveal —
+    // and std::nullopt on a party that does not learn it.
+    template <class V> using reveal_t = std::optional<typename V::clear_t>;
 
-    SH2PCCtx(IOChannel* io, int party, int batch_sz = 1024 * 16)
+    SH2PCSession(IOChannel* io, int party, int batch_sz = 1024 * 16)
         : party_(party), io_(io), batch_size_(batch_sz) {
         if (party_ != ALICE && party_ != BOB)
-            error("SH2PCCtx: party must be ALICE or BOB");
-        if (io_ == nullptr) error("SH2PCCtx: io channel must not be null");
-        if (batch_size_ <= 0) error("SH2PCCtx: batch size must be positive");
+            error("SH2PCSession: party must be ALICE or BOB");
+        if (io_ == nullptr) error("SH2PCSession: io channel must not be null");
+        if (batch_size_ <= 0) error("SH2PCSession: batch size must be positive");
         if (party_ == ALICE) {
             block tmp[2];
             PRG().random_block(tmp, 2);
@@ -77,44 +82,33 @@ public:
         buf_  = std::make_unique<block[]>(batch_size_);
         buff_ = std::make_unique<bool[]>(batch_size_);
         refill_();
+        ctx_.bind_(party_, io_, delta_, constant_, &mitccrh_);
     }
+    SH2PCSession(const SH2PCSession&) = delete;
+    SH2PCSession& operator=(const SH2PCSession&) = delete;
 
     void finalize() {}
+
+    // The gate context, for value construction that is not I/O — e.g. public
+    // constants UInt<32>::constant(sess.ctx(), 7), operators, or frontend::run.
+    Ctx& ctx() { return ctx_; }
 
     int party() const { return party_; }
     // AND-gate count so far (mitccrh advances gid by 2 per garbled AND).
     uint64_t num_and() const { return mitccrh_.gid / 2; }
 
-    // ---- BooleanContext gate ops (value-return; drive the typed values) ----
-    Wire public_bit(bool b)        { return SHWire{ constant_[b] }; }
-    Wire xor_gate(Wire a, Wire b)  { return SHWire{ a.label ^ b.label }; }
-    Wire not_gate(Wire a)          { return SHWire{ a.label ^ constant_[1] }; }
-    Wire and_gate(Wire a, Wire b)  {
-        if (party_ == ALICE) {
-            block table[2];
-            block w = halfgates_garble(a.label, a.label ^ delta_,
-                                       b.label, b.label ^ delta_, delta_, table, &mitccrh_);
-            io_->send_block(table, 2);
-            return SHWire{ w };
-        } else {
-            block table[2];
-            io_->recv_block(table, 2);
-            return SHWire{ halfgates_eval(a.label, b.label, table, &mitccrh_) };
-        }
-    }
-
     // ---- typed I/O (the only way clear values enter / leave a circuit) ----
-    // input<T>(owner, clear): T is a value type over THIS context, e.g.
-    // UInt_T<SH2PCCtx,32>. Called by both parties; only `owner`'s clear is used.
-    template <class T, class Clear>
-    T input(int owner, Clear clear) {
-        static_assert(std::is_same_v<typename T::context_type, SH2PCCtx>,
-            "SH2PCCtx::input<T>: T must be a value type over SH2PCCtx (e.g. UInt_T<SH2PCCtx,32>)");
-        const int W = value_traits<T>::width();
-        std::vector<bool> e = value_traits<T>::encode(clear);
+    // input<V>(owner, clear): V is a value type over THIS session's Ctx, e.g.
+    // SH2PCSession::UInt<32>. Called by both parties; only `owner`'s clear is used.
+    template <class V>
+    V input(int owner, const typename V::clear_t& clear) {
+        static_assert(std::is_same_v<typename V::context_type, Ctx>,
+            "SH2PCSession::input<V>: V must be a value type over SH2PCSession::Ctx (e.g. SH2PCSession::UInt<32>)");
+        const int W = value_traits<V>::width();
+        std::vector<bool> e = value_traits<V>::encode(clear);
         // Always enforced (not debug-only): a short/long encoding is a codec bug;
         // never silently pad — wrong input bits would corrupt the result.
-        if (e.size() != (size_t)W) error("SH2PCCtx::input: T::encode width != T::width()");
+        if (e.size() != (size_t)W) error("SH2PCSession::input: V::encode width != V::width()");
         std::vector<block> lab(W);
         // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
         auto bb = std::make_unique<bool[]>(W);
@@ -122,25 +116,32 @@ public:
         feed_(lab.data(), owner, bb.get(), (size_t)W);
         std::vector<SHWire> wires(W);
         for (int i = 0; i < W; ++i) wires[i].label = lab[i];
-        return T::from_wires(*this, wires.data());
+        return V::from_wires(ctx_, wires.data());
     }
 
-    // reveal<T>(v, recipient): open to recipient (ALICE/BOB/PUBLIC/XOR-share).
-    template <class T>
-    auto reveal(const T& v, int recipient) {
-        static_assert(std::is_same_v<typename T::context_type, SH2PCCtx>,
-            "SH2PCCtx::reveal<T>: T must be a value type over SH2PCCtx");
+    // reveal<V>(v, recipient): open to recipient (ALICE/BOB/PUBLIC/XOR-share),
+    // returning std::optional<clear_t>. The protocol exchange runs on both parties;
+    // the value is then present only on a party that learns it — every party for
+    // PUBLIC, the named recipient for ALICE/BOB, and both parties (each its own
+    // secret-share, whose XOR is the cleartext) for an XOR reveal. A party that does
+    // not learn it gets std::nullopt rather than a decoded placeholder.
+    template <class V>
+    reveal_t<V> reveal(const V& v, int recipient) {
+        static_assert(std::is_same_v<typename V::context_type, Ctx>,
+            "SH2PCSession::reveal<V>: V must be a value type over SH2PCSession::Ctx");
 #if EMP_CONTEXT_CHECKS
-        if (v.context() != this) error("SH2PCCtx::reveal: value is bound to a different context");
+        if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
-        const int W = value_traits<T>::width();
+        const int W = value_traits<V>::width();
         std::vector<SHWire> wires(W);
         v.pack_wires(wires.data());
         std::vector<block> lab(W);
         for (int i = 0; i < W; ++i) lab[i] = wires[i].label;
         auto bb = std::make_unique<bool[]>(W);
         reveal_(bb.get(), recipient, lab.data(), (size_t)W);
-        return value_traits<T>::decode(bb.get());
+        if (recipient == PUBLIC || recipient == XOR || recipient == party_)
+            return std::optional<typename V::clear_t>(value_traits<V>::decode(bb.get()));
+        return std::nullopt;
     }
 
     // ---- raw-bit I/O: width-agnostic, for values past the 64-bit clear codec
@@ -170,6 +171,7 @@ private:
     std::unique_ptr<bool[]>  buff_;
     int top_ = 0;
     int batch_size_;
+    SH2PCCtx ctx_;                        // the gate context, bound after handshake
 
     void refill_() {
         ot_->rcot(buf_.get(), batch_size_);
@@ -187,7 +189,7 @@ private:
             return;
         }
         if (from_party != ALICE && from_party != BOB)
-            error("SH2PCCtx: input owner must be ALICE, BOB, or PUBLIC");
+            error("SH2PCSession: input owner must be ALICE, BOB, or PUBLIC");
         if (party_ == ALICE) {
             if (from_party == ALICE) {
                 shared_prg_.random_block(label, length);
@@ -239,7 +241,7 @@ private:
 
     void reveal_(bool* out, int to_party, const block* label, size_t length) {
         if (to_party != XOR && to_party != ALICE && to_party != BOB && to_party != PUBLIC)
-            error("SH2PCCtx::reveal: recipient must be ALICE, BOB, PUBLIC, or XOR");
+            error("SH2PCSession::reveal: recipient must be ALICE, BOB, PUBLIC, or XOR");
         if (to_party == XOR) {
             for (size_t i = 0; i < length; ++i) out[i] = getLSB(label[i]);
             return;
@@ -262,7 +264,8 @@ private:
     }
 };
 
-static_assert(BooleanContext<SH2PCCtx>);
+static_assert(CircuitSession<SH2PCSession>);
+static_assert(SessionIO<SH2PCSession, SH2PCSession::UInt<32>>);
 
 }  // namespace emp
 #endif  // EMP_SH2PC_SESSION_H__

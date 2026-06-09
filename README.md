@@ -9,7 +9,7 @@
 > - **Existing projects pinned to a published release: stay on `0.3.0`** —
 >   branch [`v0.3.x`](https://github.com/emp-toolkit/emp-sh2pc/tree/v0.3.x).
 >   Bug fixes and security patches will be backported to `v0.3.x`.
-> - **New projects, or willing to migrate: track the development branch**
+> - **New projects, or able to track a moving API: use the development branch**
 >   (this branch, `main`). It will become `1.0.0-alpha` after a polish
 >   pass and then `1.0.0`. Builds against emp-tool / emp-ot ≥ 1.0
 >   (unified `Backend` execution layer, de-templated IO and OT) — but
@@ -17,6 +17,35 @@
 >   Requires emp-tool ≥ 1.0.0-alpha and emp-ot ≥ 1.0.0-alpha.
 
 Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` over a `NetIO` channel, with batched IKNP COT for input wires.
+
+## Usage
+
+The public handle is one session, `SH2PCSession`: it owns the IO channel and all
+protocol state, and `sess.ctx()` is the gate context your values are built over.
+
+```cpp
+#include <emp-sh2pc/emp-sh2pc.h>
+using namespace emp;
+
+NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+SH2PCSession sess(&io, party);
+
+using UInt32 = SH2PCSession::UInt<32>;
+auto a = sess.input<UInt32>(ALICE, av);   // each party owns its input
+auto b = sess.input<UInt32>(BOB,   bv);
+auto c = a + b;                            // eager half-gate over sess.ctx()
+uint32_t out = sess.reveal(c, PUBLIC).value();  // open the result to both parties
+```
+
+`reveal` returns `std::optional<clear_t>`: the value on a party that learns it —
+every party for `PUBLIC`, the named recipient for `reveal(v, ALICE)` / `reveal(v, BOB)`,
+both parties (each its own secret-share) for `reveal(v, XOR)` — and `std::nullopt`
+on a party that does not. Circuit values are emp-tool's context-bound types:
+`SH2PCSession::Bit`, `UInt<N>`, `Int<N>`, `Float<W>`, `BitVec<N>`. Public constants
+use `UInt32::constant(sess.ctx(), 1)`.
+A reusable circuit is compiled once with the emp-tool frontend and replayed over the
+session's context with `frontend::run(sess.ctx(), circuit, args...)`. There is no
+global backend — the session is explicit.
 
 ## Requirements
 
