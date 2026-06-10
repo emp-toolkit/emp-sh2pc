@@ -4,27 +4,27 @@
 // SH2PCSession — the public handle for semi-honest 2PC (garbled circuits), the
 // SH2PC peer of ClearSession. It owns ALL protocol state — IO, IKNP-OT, Delta, the
 // synchronized PRG, the half-gate MITCCRH/constants, and the COT refill buffer —
-// and the I/O boundary (input / reveal); sess.ctx() is the gate context values are
+// and the I/O boundary (input / reveal); sess.direct_ctx() is the gate context values are
 // built over. Gates are eager (an AND garbles/evaluates as it is called), so there
 // is no chunk/checkpoint model: a value's wire IS the live garbled label.
 //
 //   SH2PCSession sess(io, party);
-//   using UInt32 = SH2PCSession::UInt<32>;
+//   using Ctx = SH2PCSession::DirectCtx; using UInt32 = UInt_T<Ctx, 32>;
 //   auto a = sess.input<UInt32>(ALICE, x);
 //   auto b = sess.input<UInt32>(BOB,   y);
-//   auto c = a + b;                          // eager half-gate over sess.ctx()
+//   auto c = a + b;                          // eager half-gate over sess.direct_ctx()
 //   auto out = sess.reveal(c, PUBLIC);       // open the result
 //
-// Public constants stay value/context-level: UInt32::constant(sess.ctx(), 7).
+// Public constants stay value/context-level: UInt32::constant(sess.direct_ctx(), 7).
 // There is no global backend and no virtual dispatch — the session is explicit.
 
 #include "emp-sh2pc/sh2pc_ctx.h"                 // SHWire, SH2PCCtx
 #include "emp-tool/emp-tool.h"
-#include "emp-tool/context/context.h"
+#include "emp-tool/ir/context/context.h"
 #include "emp-tool/circuits/typed.h"             // Bit_T / UInt_T / Int_T / Float_T / BitVec_T
 #include "emp-tool/circuits/value_traits.h"      // value_traits<T>: width/encode/decode
-#include "emp-tool/session/concept.h"            // CircuitSession / SessionIO
-#include "emp-tool/crypto/mitccrh.h"
+#include "emp-tool/ir/session/session_io.h"            // Session / DirectSession / SessionIO
+#include "emp-tool/runtime/crypto/mitccrh.h"
 #include "emp-ot/emp-ot.h"
 #include <cstring>
 #include <memory>
@@ -36,12 +36,7 @@ namespace emp {
 
 class SH2PCSession {
 public:
-    using Ctx = SH2PCCtx;
-    template <int N> using UInt   = UInt_T<Ctx, N>;
-    template <int N> using Int    = Int_T<Ctx, N>;
-    template <int N> using BitVec = BitVec_T<Ctx, N>;
-    template <int W> using Float  = Float_T<Ctx, W>;
-    using Bit = Bit_T<Ctx>;
+    using DirectCtx = SH2PCCtx;   // the direct/user gate context; values are UInt_T<DirectCtx,N> etc.
     // reveal returns std::optional<clear_t> (the session contract): the value is
     // present only on a party that learns it — every party for PUBLIC, the named
     // recipient for ALICE/BOB, both parties (each its own share) for an XOR reveal —
@@ -89,21 +84,22 @@ public:
 
     void finalize() {}
 
-    // The gate context, for value construction that is not I/O — e.g. public
-    // constants UInt<32>::constant(sess.ctx(), 7), operators, or frontend::run.
-    Ctx& ctx() { return ctx_; }
+    // The direct gate context, for value construction that is not I/O — e.g. public
+    // constants UInt_T<DirectCtx,32>::constant(sess.direct_ctx(), 7), operators, or
+    // frontend::run.
+    DirectCtx& direct_ctx() { return ctx_; }
 
     int party() const { return party_; }
     // AND-gate count so far (mitccrh advances gid by 2 per garbled AND).
     uint64_t num_and() const { return mitccrh_.gid / 2; }
 
     // ---- typed I/O (the only way clear values enter / leave a circuit) ----
-    // input<V>(owner, clear): V is a value type over THIS session's Ctx, e.g.
-    // SH2PCSession::UInt<32>. Called by both parties; only `owner`'s clear is used.
-    template <class V>
+    // input<V>(owner, clear): V is any WireValue over THIS session's DirectCtx, e.g.
+    // UInt_T<DirectCtx,32>. Called by both parties; only `owner`'s clear is used.
+    template <WireValue V>
     V input(int owner, const typename V::clear_t& clear) {
-        static_assert(std::is_same_v<typename V::context_type, Ctx>,
-            "SH2PCSession::input<V>: V must be a value type over SH2PCSession::Ctx (e.g. SH2PCSession::UInt<32>)");
+        static_assert(std::same_as<typename V::context_type, DirectCtx>,
+            "SH2PCSession::input<V>: V must be a value over this session's DirectCtx");
         const int W = value_traits<V>::width();
         std::vector<bool> e = value_traits<V>::encode(clear);
         // Always enforced (not debug-only): a short/long encoding is a codec bug;
@@ -125,10 +121,10 @@ public:
     // PUBLIC, the named recipient for ALICE/BOB, and both parties (each its own
     // secret-share, whose XOR is the cleartext) for an XOR reveal. A party that does
     // not learn it gets std::nullopt rather than a decoded placeholder.
-    template <class V>
+    template <WireValue V>
     reveal_t<V> reveal(const V& v, int recipient) {
-        static_assert(std::is_same_v<typename V::context_type, Ctx>,
-            "SH2PCSession::reveal<V>: V must be a value type over SH2PCSession::Ctx");
+        static_assert(std::same_as<typename V::context_type, DirectCtx>,
+            "SH2PCSession::reveal<V>: V must be a value over this session's DirectCtx");
 #if EMP_CONTEXT_CHECKS
         if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
@@ -264,8 +260,9 @@ private:
     }
 };
 
-static_assert(CircuitSession<SH2PCSession>);
-static_assert(SessionIO<SH2PCSession, SH2PCSession::UInt<32>>);
+static_assert(Session<SH2PCSession>);
+static_assert(DirectSession<SH2PCSession>);
+static_assert(SessionIO<SH2PCSession, UInt_T<SH2PCSession::DirectCtx, 32>>);
 
 }  // namespace emp
 #endif  // EMP_SH2PC_SESSION_H__

@@ -10,10 +10,10 @@ NetIO* io;
 int party;
 static SH2PCSession* g_ctx;
 
-using B = SH2PCSession::Bit;
+using B = Bit_T<SH2PCSession::DirectCtx>;
 
 static B mkbit(bool v, int owner) {
-	if (owner == PUBLIC) return B::constant(g_ctx->ctx(), v);
+	if (owner == PUBLIC) return B::constant(g_ctx->direct_ctx(), v);
 	return g_ctx->input<B>(owner, v);
 }
 

@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
 	std::vector<SHWire> in(256);
 	for (int i = 0; i < 128; ++i) { in[i] = pt[i]; in[128 + i] = key[i]; }
-	std::vector<SHWire> ct = execute_program(sess.ctx(), circuit::builtin_circuit("aes128"),
+	std::vector<SHWire> ct = execute_program(sess.direct_ctx(), circuit::builtin_circuit("aes128"),
 	                                         std::span<const SHWire>(in.data(), 256));
 
 	bool obits[128];

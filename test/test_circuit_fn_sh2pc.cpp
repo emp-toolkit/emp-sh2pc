@@ -4,16 +4,16 @@
 // same (deterministic) circuit and replay it in lockstep. C++20.
 
 #include "emp-sh2pc/emp-sh2pc.h"           // NetIO, parse_party_and_port, SH2PCSession
-#include "emp-tool/frontend/circuit_fn.h"  // frontend::compile / run
-#include "emp-tool/frontend/rec.h"         // rec::UInt / rec::Float shapes
+#include "emp-tool/circuits/frontend/circuit_fn.h"  // frontend::compile / run
+#include "emp-tool/circuits/frontend/rec.h"         // rec::UInt / rec::Float shapes
 #include <cstdint>
 #include <cstdio>
 
 using namespace emp;
 namespace cf = emp::frontend;
 
-using U32 = SH2PCSession::UInt<32>;
-using F32 = SH2PCSession::Float<32>;
+using U32 = UInt_T<SH2PCSession::DirectCtx, 32>;
+using F32 = Float_T<SH2PCSession::DirectCtx, 32>;
 
 int main(int argc, char** argv) {
     int port, party;
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         const uint32_t av = 12345678u, bv = 87654321u;
         U32 a = sess.input<U32>(ALICE, (uint64_t)av);
         U32 b = sess.input<U32>(BOB,   (uint64_t)bv);
-        U32 c = cf::run(sess.ctx(), circ_add, a, b);
+        U32 c = cf::run(sess.direct_ctx(), circ_add, a, b);
         uint32_t r = (uint32_t)sess.reveal(c, PUBLIC).value();
         if (party == BOB) {
             bool ok = r == (uint32_t)(av + bv);
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     {
         F32 a = sess.input<F32>(ALICE, 1.5f);
         F32 b = sess.input<F32>(BOB,   2.25f);
-        F32 c = cf::run(sess.ctx(), circ_fadd, a, b);
+        F32 c = cf::run(sess.direct_ctx(), circ_fadd, a, b);
         float r = sess.reveal(c, PUBLIC).value();
         if (party == BOB) {
             bool ok = r == 3.75f;

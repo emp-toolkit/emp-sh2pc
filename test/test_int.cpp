@@ -16,7 +16,7 @@ static constexpr int kRuns = 100;
 
 static block test_seed;
 
-using U32 = SH2PCSession::UInt<32>;
+using U32 = UInt_T<SH2PCSession::DirectCtx, 32>;
 
 template <typename Op, typename Op2>
 void test_int(SH2PCSession& sess, int runs = kRuns) {

@@ -21,7 +21,7 @@ Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-to
 ## Usage
 
 The public handle is one session, `SH2PCSession`: it owns the IO channel and all
-protocol state, and `sess.ctx()` is the gate context your values are built over.
+protocol state, and `sess.direct_ctx()` is the gate context your values are built over.
 
 ```cpp
 #include <emp-sh2pc/emp-sh2pc.h>
@@ -30,22 +30,24 @@ using namespace emp;
 NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
 SH2PCSession sess(&io, party);
 
-using UInt32 = SH2PCSession::UInt<32>;
+using Ctx = SH2PCSession::DirectCtx;        // the gate context values are built over
+using UInt32 = UInt_T<Ctx, 32>;
 auto a = sess.input<UInt32>(ALICE, av);   // each party owns its input
 auto b = sess.input<UInt32>(BOB,   bv);
-auto c = a + b;                            // eager half-gate over sess.ctx()
+auto c = a + b;                            // eager half-gate over sess.direct_ctx()
 uint32_t out = sess.reveal(c, PUBLIC).value();  // open the result to both parties
 ```
 
 `reveal` returns `std::optional<clear_t>`: the value on a party that learns it —
 every party for `PUBLIC`, the named recipient for `reveal(v, ALICE)` / `reveal(v, BOB)`,
 both parties (each its own secret-share) for `reveal(v, XOR)` — and `std::nullopt`
-on a party that does not. Circuit values are emp-tool's context-bound types:
-`SH2PCSession::Bit`, `UInt<N>`, `Int<N>`, `Float<W>`, `BitVec<N>`. Public constants
-use `UInt32::constant(sess.ctx(), 1)`.
-A reusable circuit is compiled once with the emp-tool frontend and replayed over the
-session's context with `frontend::run(sess.ctx(), circuit, args...)`. There is no
-global backend — the session is explicit.
+on a party that does not. The session names no value family — circuit values are
+emp-tool's context-bound types (`UInt_T<Ctx,N>`, `Int_T<Ctx,N>`, `Float_T<Ctx,W>`,
+`BitVec_T<Ctx,N>`, `Bit_T<Ctx>`), and `input`/`reveal` are generic over any `WireValue`.
+Public constants use `UInt32::constant(sess.direct_ctx(), 1)`. A reusable circuit is
+compiled once with the emp-tool frontend and replayed over the session's context with
+`frontend::run(sess.direct_ctx(), circuit, args...)`. There is no global backend — the
+session is explicit.
 
 ## Requirements
 

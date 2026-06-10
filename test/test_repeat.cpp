@@ -11,7 +11,7 @@ using namespace std;
 int party;
 int port = 12345;
 
-using SI = SH2PCSession::Int<32>;
+using SI = Int_T<SH2PCSession::DirectCtx, 32>;
 
 void test_int_reveal(int number) {
 	usleep(100);
