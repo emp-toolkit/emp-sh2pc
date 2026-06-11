@@ -22,8 +22,7 @@
 #include "emp-tool/emp-tool.h"
 #include "emp-tool/ir/context/context.h"
 #include "emp-tool/circuits/typed.h"             // Bit_T / UInt_T / Int_T / Float_T / BitVec_T
-#include "emp-tool/circuits/value_traits.h"      // value_traits<T>: width/encode/decode
-#include "emp-tool/ir/session/session_io.h"            // Session / DirectSession / SessionIO
+#include "emp-tool/ir/session/session_io.h"            // Session / DirectSession / SessionIO / encode_value_bits
 #include "emp-tool/runtime/crypto/mitccrh.h"
 #include "emp-ot/emp-ot.h"
 #include <cstring>
@@ -100,11 +99,8 @@ public:
     V input(int owner, const typename V::clear_t& clear) {
         static_assert(std::same_as<typename V::context_type, DirectCtx>,
             "SH2PCSession::input<V>: V must be a value over this session's DirectCtx");
-        const int W = value_traits<V>::width();
-        std::vector<bool> e = value_traits<V>::encode(clear);
-        // Always enforced (not debug-only): a short/long encoding is a codec bug;
-        // never silently pad — wrong input bits would corrupt the result.
-        if (e.size() != (size_t)W) error("SH2PCSession::input: V::encode width != V::width()");
+        const int W = V::width();
+        std::vector<bool> e = encode_value_bits<V>(clear, "SH2PCSession::input");
         // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
         auto bb = std::make_unique<bool[]>(W);
         for (int i = 0; i < W; ++i) bb[i] = (bool)e[i];
@@ -126,13 +122,13 @@ public:
 #if EMP_CONTEXT_CHECKS
         if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
-        const int W = value_traits<V>::width();
+        const int W = V::width();
         std::vector<block> wires(W);
         v.pack_wires(wires.data());
         auto bb = std::make_unique<bool[]>(W);
         reveal_(bb.get(), recipient, wires.data(), (size_t)W);
         if (recipient == PUBLIC || recipient == XOR || recipient == party_)
-            return std::optional<typename V::clear_t>(value_traits<V>::decode(bb.get()));
+            return std::optional<typename V::clear_t>(V::decode(bb.get()));
         return std::nullopt;
     }
 
