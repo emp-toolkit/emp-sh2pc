@@ -19,15 +19,16 @@ int main(int argc, char** argv) {
 
 	SH2PCSession sess(&io, party);
 
+	using Wire = SH2PCCtx::Wire;   // = block: the wire is the live garbled label
 	bool zero[128];
 	for (int i = 0; i < 128; ++i) zero[i] = false;
-	std::vector<SHWire> pt  = sess.input_bits(ALICE, zero, 128);  // plaintext = 0^128
-	std::vector<SHWire> key = sess.input_bits(BOB,   zero, 128);  // key       = 0^128
+	std::vector<Wire> pt  = sess.input_bits(ALICE, zero, 128);  // plaintext = 0^128
+	std::vector<Wire> key = sess.input_bits(BOB,   zero, 128);  // key       = 0^128
 
-	std::vector<SHWire> in(256);
+	std::vector<Wire> in(256);
 	for (int i = 0; i < 128; ++i) { in[i] = pt[i]; in[128 + i] = key[i]; }
-	std::vector<SHWire> ct = execute_program(sess.direct_ctx(), circuit::builtin_circuit("aes128"),
-	                                         std::span<const SHWire>(in.data(), 256));
+	std::vector<Wire> ct = execute_program(sess.direct_ctx(), circuit::builtin_circuit("aes128"),
+	                                       std::span<const Wire>(in.data(), 256));
 
 	bool obits[128];
 	sess.reveal_bits(obits, PUBLIC, ct.data(), 128);

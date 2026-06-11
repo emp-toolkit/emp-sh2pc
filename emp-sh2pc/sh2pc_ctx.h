@@ -13,40 +13,34 @@
 #include "emp-tool/ir/context/context.h"        // BooleanContext
 #include "emp-tool/runtime/execution/half_gate.h"    // halfgates_garble / halfgates_eval
 #include "emp-tool/runtime/crypto/mitccrh.h"
-#include <cstring>
 
 namespace emp {
 
-// Garbled-label wire, wrapped so it is std::regular (a raw block is not).
-struct SHWire {
-    block label{};
-    bool operator==(const SHWire& r) const { return std::memcmp(&label, &r.label, sizeof(block)) == 0; }
-    bool operator!=(const SHWire& r) const { return !(*this == r); }
-};
-
 class SH2PCCtx {
 public:
-    using Wire = SHWire;
+    // The wire IS the live garbled label: block (__m128i) is semiregular, which
+    // is all BooleanContext requires, so no wrapper type is needed.
+    using Wire = block;
 
     // Default-constructed contexts are inert; SH2PCSession binds a usable one (via
     // bind_) once its handshake has fixed Delta, the constant labels, and MITCCRH.
     SH2PCCtx() = default;
 
     // ---- BooleanContext gate ops (value-return; drive the typed values) ----
-    Wire public_bit(bool b)       { return SHWire{ constant_[b ? 1 : 0] }; }
-    Wire xor_gate(Wire a, Wire b) { return SHWire{ a.label ^ b.label }; }
-    Wire not_gate(Wire a)         { return SHWire{ a.label ^ constant_[1] }; }
+    Wire public_bit(bool b)       { return constant_[b ? 1 : 0]; }
+    Wire xor_gate(Wire a, Wire b) { return a ^ b; }
+    Wire not_gate(Wire a)         { return a ^ constant_[1]; }
     Wire and_gate(Wire a, Wire b) {
         if (party_ == ALICE) {
             block table[2];
-            block w = halfgates_garble(a.label, a.label ^ delta_,
-                                       b.label, b.label ^ delta_, delta_, table, mitccrh_);
+            block w = halfgates_garble(a, a ^ delta_,
+                                       b, b ^ delta_, delta_, table, mitccrh_);
             io_->send_block(table, 2);
-            return SHWire{ w };
+            return w;
         } else {
             block table[2];
             io_->recv_block(table, 2);
-            return SHWire{ halfgates_eval(a.label, b.label, table, mitccrh_) };
+            return halfgates_eval(a, b, table, mitccrh_);
         }
     }
 

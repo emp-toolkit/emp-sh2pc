@@ -18,7 +18,7 @@
 // Public constants stay value/context-level: UInt32::constant(sess.direct_ctx(), 7).
 // There is no global backend and no virtual dispatch — the session is explicit.
 
-#include "emp-sh2pc/sh2pc_ctx.h"                 // SHWire, SH2PCCtx
+#include "emp-sh2pc/sh2pc_ctx.h"                 // SH2PCCtx (Wire = block)
 #include "emp-tool/emp-tool.h"
 #include "emp-tool/ir/context/context.h"
 #include "emp-tool/circuits/typed.h"             // Bit_T / UInt_T / Int_T / Float_T / BitVec_T
@@ -105,13 +105,11 @@ public:
         // Always enforced (not debug-only): a short/long encoding is a codec bug;
         // never silently pad — wrong input bits would corrupt the result.
         if (e.size() != (size_t)W) error("SH2PCSession::input: V::encode width != V::width()");
-        std::vector<block> lab(W);
         // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
         auto bb = std::make_unique<bool[]>(W);
         for (int i = 0; i < W; ++i) bb[i] = (bool)e[i];
-        feed_(lab.data(), owner, bb.get(), (size_t)W);
-        std::vector<SHWire> wires(W);
-        for (int i = 0; i < W; ++i) wires[i].label = lab[i];
+        std::vector<block> wires(W);
+        feed_(wires.data(), owner, bb.get(), (size_t)W);
         return V::from_wires(ctx_, wires.data());
     }
 
@@ -129,12 +127,10 @@ public:
         if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
         const int W = value_traits<V>::width();
-        std::vector<SHWire> wires(W);
+        std::vector<block> wires(W);
         v.pack_wires(wires.data());
-        std::vector<block> lab(W);
-        for (int i = 0; i < W; ++i) lab[i] = wires[i].label;
         auto bb = std::make_unique<bool[]>(W);
-        reveal_(bb.get(), recipient, lab.data(), (size_t)W);
+        reveal_(bb.get(), recipient, wires.data(), (size_t)W);
         if (recipient == PUBLIC || recipient == XOR || recipient == party_)
             return std::optional<typename V::clear_t>(value_traits<V>::decode(bb.get()));
         return std::nullopt;
@@ -142,17 +138,13 @@ public:
 
     // ---- raw-bit I/O: width-agnostic, for values past the 64-bit clear codec
     // (e.g. 128-bit AES blocks) or hand-assembled wire vectors. ----
-    std::vector<SHWire> input_bits(int owner, const bool* in, size_t n) {
-        std::vector<block> lab(n);
-        feed_(lab.data(), owner, in, n);
-        std::vector<SHWire> r(n);
-        for (size_t i = 0; i < n; ++i) r[i].label = lab[i];
+    std::vector<block> input_bits(int owner, const bool* in, size_t n) {
+        std::vector<block> r(n);
+        feed_(r.data(), owner, in, n);
         return r;
     }
-    void reveal_bits(bool* out, int recipient, const SHWire* w, size_t n) {
-        std::vector<block> lab(n);
-        for (size_t i = 0; i < n; ++i) lab[i] = w[i].label;
-        reveal_(out, recipient, lab.data(), n);
+    void reveal_bits(bool* out, int recipient, const block* w, size_t n) {
+        reveal_(out, recipient, w, n);
     }
 
 private:
