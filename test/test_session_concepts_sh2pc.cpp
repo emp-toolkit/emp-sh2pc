@@ -10,19 +10,19 @@ using namespace emp;
 
 static_assert(Session<SH2PCSession>);
 static_assert(DirectSession<SH2PCSession>);
-static_assert(SessionIO<SH2PCSession, UInt_T<SH2PCSession::DirectCtx, 32>>);
-static_assert(SessionIO<SH2PCSession, Int_T<SH2PCSession::DirectCtx, 32>>);
-static_assert(SessionIO<SH2PCSession, BitVec_T<SH2PCSession::DirectCtx, 128>>);
+static_assert(SessionIO<SH2PCSession, UInt_T<SH2PCSession::ctx_t, 32>>);
+static_assert(SessionIO<SH2PCSession, Int_T<SH2PCSession::ctx_t, 32>>);
+static_assert(SessionIO<SH2PCSession, BitVec_T<SH2PCSession::ctx_t, 128>>);
 
-// DirectCtx is the direct gate context; the value layer is built over it.
-static_assert(std::is_same_v<SH2PCSession::DirectCtx, SH2PCCtx>);
+// ctx_t is the direct gate context; the value layer is built over it.
+static_assert(std::is_same_v<SH2PCSession::ctx_t, SH2PCCtx>);
 static_assert(BooleanContext<SH2PCCtx>);
-static_assert(std::is_same_v<UInt_T<SH2PCSession::DirectCtx, 32>, UInt_T<SH2PCCtx, 32>>);
+static_assert(std::is_same_v<UInt_T<SH2PCSession::ctx_t, 32>, UInt_T<SH2PCCtx, 32>>);
 
 // reveal returns std::optional<clear_t> (nullopt on a party that does not learn it).
 static_assert(std::is_same_v<
-    SH2PCSession::reveal_t<UInt_T<SH2PCSession::DirectCtx, 32>>,
-    std::optional<UInt_T<SH2PCSession::DirectCtx, 32>::clear_t>>);
+    SH2PCSession::reveal_t<UInt_T<SH2PCSession::ctx_t, 32>>,
+    std::optional<UInt_T<SH2PCSession::ctx_t, 32>::clear_t>>);
 
 int main() {
     std::printf("test_session_concepts_sh2pc: PASS\n");

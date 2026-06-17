@@ -19,13 +19,13 @@ static constexpr int kRuns = 1000;
 static constexpr int kRuns = 100;
 #endif
 
-using F = Float_T<SH2PCSession::DirectCtx, 32>;
+using F = Float_T<SH2PCSession::ctx_t, 32>;
 
 static SH2PCSession* g_ctx;
 
 static F finput(int owner, float v) { return g_ctx->input<F>(owner, v); }
 static float frev(const F& x) { return g_ctx->reveal(x, PUBLIC).value(); }
-static bool brev(const Bit_T<SH2PCSession::DirectCtx>& b) { return g_ctx->reveal(b, PUBLIC).value(); }
+static bool brev(const Bit_T<SH2PCSession::ctx_t>& b) { return g_ctx->reveal(b, PUBLIC).value(); }
 
 // bit-exact: the on-disk circuits are correctly-rounded, so a passing op
 // reproduces the host float bit-for-bit (incl. NaN/Inf patterns).
@@ -100,8 +100,8 @@ void fp_cmp(double a, double b) {
 void fp_if(double a, double b) {
 	cout << "if true/false: " << a << " " << b << " - ";
 	F x = finput(ALICE, (float)a), y = finput(BOB, (float)b);
-	Bit_T<SH2PCSession::DirectCtx> one = Bit_T<SH2PCSession::DirectCtx>::constant(g_ctx->direct_ctx(), true);
-	Bit_T<SH2PCSession::DirectCtx> zero = Bit_T<SH2PCSession::DirectCtx>::constant(g_ctx->direct_ctx(), false);
+	Bit_T<SH2PCSession::ctx_t> one = Bit_T<SH2PCSession::ctx_t>::constant(g_ctx->ctx(), true);
+	Bit_T<SH2PCSession::ctx_t> zero = Bit_T<SH2PCSession::ctx_t>::constant(g_ctx->ctx(), false);
 	cout << frev(x.select(one, y)) << " " << frev(x.select(zero, y)) << endl;
 }
 

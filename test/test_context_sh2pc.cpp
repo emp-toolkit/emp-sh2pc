@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
     // 1) keep-templated kernel: UInt32 add (ALICE owns a, BOB owns b).
     {
         const uint32_t av = 12345678u, bv = 87654321u;
-        auto a = sess.input<UInt_T<SH2PCSession::DirectCtx, 32>>(ALICE, (uint64_t)av);
-        auto b = sess.input<UInt_T<SH2PCSession::DirectCtx, 32>>(BOB,   (uint64_t)bv);
+        auto a = sess.input<UInt_T<SH2PCSession::ctx_t, 32>>(ALICE, (uint64_t)av);
+        auto b = sess.input<UInt_T<SH2PCSession::ctx_t, 32>>(BOB,   (uint64_t)bv);
         auto c = a + b;
         uint32_t r = (uint32_t)sess.reveal(c, PUBLIC).value();
         if (party == BOB) {
@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
 
     // 2) IR-replay builtin: fp32 add (fp32_add.empbc) through the native context.
     {
-        auto a = sess.input<Float_T<SH2PCSession::DirectCtx, 32>>(ALICE, 1.5f);
-        auto b = sess.input<Float_T<SH2PCSession::DirectCtx, 32>>(BOB,   2.25f);
+        auto a = sess.input<Float_T<SH2PCSession::ctx_t, 32>>(ALICE, 1.5f);
+        auto b = sess.input<Float_T<SH2PCSession::ctx_t, 32>>(BOB,   2.25f);
         auto c = a + b;
         float r = sess.reveal(c, PUBLIC).value();
         if (party == BOB) {
@@ -52,9 +52,9 @@ int main(int argc, char** argv) {
     // 3) PUBLIC input is a public constant (no OT): a + b + PUBLIC(k).
     {
         const uint32_t av = 1000u, bv = 2000u, kv = 333u;
-        auto a = sess.input<UInt_T<SH2PCSession::DirectCtx, 32>>(ALICE,  (uint64_t)av);
-        auto b = sess.input<UInt_T<SH2PCSession::DirectCtx, 32>>(BOB,    (uint64_t)bv);
-        auto k = sess.input<UInt_T<SH2PCSession::DirectCtx, 32>>(PUBLIC, (uint64_t)kv);
+        auto a = sess.input<UInt_T<SH2PCSession::ctx_t, 32>>(ALICE,  (uint64_t)av);
+        auto b = sess.input<UInt_T<SH2PCSession::ctx_t, 32>>(BOB,    (uint64_t)bv);
+        auto k = sess.input<UInt_T<SH2PCSession::ctx_t, 32>>(PUBLIC, (uint64_t)kv);
         uint32_t r = (uint32_t)sess.reveal(a + b + k, PUBLIC).value();
         if (party == BOB) {
             bool ok = r == (uint32_t)(av + bv + kv);

@@ -4,18 +4,18 @@
 // SH2PCSession — the public handle for semi-honest 2PC (garbled circuits), the
 // SH2PC peer of ClearSession. It owns ALL protocol state — IO, IKNP-OT, Delta, the
 // synchronized PRG, the half-gate MITCCRH/constants, and the COT refill buffer —
-// and the I/O boundary (input / reveal); sess.direct_ctx() is the gate context values are
+// and the I/O boundary (input / reveal); sess.ctx() is the gate context values are
 // built over. Gates are eager (an AND garbles/evaluates as it is called), so there
 // is no chunk/checkpoint model: a value's wire IS the live garbled label.
 //
 //   SH2PCSession sess(io, party);
-//   using Ctx = SH2PCSession::DirectCtx; using UInt32 = UInt_T<Ctx, 32>;
+//   using Ctx = SH2PCSession::ctx_t; using UInt32 = UInt_T<Ctx, 32>;
 //   auto a = sess.input<UInt32>(ALICE, x);
 //   auto b = sess.input<UInt32>(BOB,   y);
-//   auto c = a + b;                          // eager half-gate over sess.direct_ctx()
+//   auto c = a + b;                          // eager half-gate over sess.ctx()
 //   auto out = sess.reveal(c, PUBLIC);       // open the result
 //
-// Public constants stay value/context-level: UInt32::constant(sess.direct_ctx(), 7).
+// Public constants stay value/context-level: UInt32::constant(sess.ctx(), 7).
 // There is no global backend and no virtual dispatch — the session is explicit.
 
 #include "emp-sh2pc/sh2pc_ctx.h"                 // SH2PCCtx (Wire = block)
@@ -36,7 +36,7 @@ namespace emp {
 
 class SH2PCSession {
 public:
-    using DirectCtx = SH2PCCtx;   // the direct/user gate context; values are UInt_T<DirectCtx,N> etc.
+    using ctx_t = SH2PCCtx;   // the direct/user gate context; values are UInt_T<ctx_t,N> etc.
     // reveal returns std::optional<clear_t> (the session contract): the value is
     // present only on a party that learns it — every party for PUBLIC, the named
     // recipient for ALICE/BOB, both parties (each its own share) for an XOR reveal —
@@ -85,21 +85,21 @@ public:
     void finalize() {}
 
     // The direct gate context, for value construction that is not I/O — e.g. public
-    // constants UInt_T<DirectCtx,32>::constant(sess.direct_ctx(), 7), operators, or
+    // constants UInt_T<ctx_t,32>::constant(sess.ctx(), 7), operators, or
     // frontend::run.
-    DirectCtx& direct_ctx() { return ctx_; }
+    ctx_t& ctx() { return ctx_; }
 
     int party() const { return party_; }
     // AND-gate count so far (mitccrh advances gid by 2 per garbled AND).
     uint64_t num_and() const { return mitccrh_.gid / 2; }
 
     // ---- typed I/O (the only way clear values enter / leave a circuit) ----
-    // input<V>(owner, clear): V is any WireValue over THIS session's DirectCtx, e.g.
-    // UInt_T<DirectCtx,32>. Called by both parties; only `owner`'s clear is used.
+    // input<V>(owner, clear): V is any WireValue over THIS session's ctx_t, e.g.
+    // UInt_T<ctx_t,32>. Called by both parties; only `owner`'s clear is used.
     template <WireValue V>
     V input(int owner, const typename V::clear_t& clear) {
-        static_assert(std::same_as<typename V::context_type, DirectCtx>,
-            "SH2PCSession::input<V>: V must be a value over this session's DirectCtx");
+        static_assert(std::same_as<typename V::context_type, ctx_t>,
+            "SH2PCSession::input<V>: V must be a value over this session's ctx_t");
         constexpr int W = V::width();
         const std::array<bool, (std::size_t)W> bits = V::encode(clear);   // stack; width is the type
         std::array<block, (std::size_t)W> wires{};
@@ -115,8 +115,8 @@ public:
     // not learn it gets std::nullopt rather than a decoded placeholder.
     template <WireValue V>
     reveal_t<V> reveal(const V& v, int recipient) {
-        static_assert(std::same_as<typename V::context_type, DirectCtx>,
-            "SH2PCSession::reveal<V>: V must be a value over this session's DirectCtx");
+        static_assert(std::same_as<typename V::context_type, ctx_t>,
+            "SH2PCSession::reveal<V>: V must be a value over this session's ctx_t");
 #if EMP_CONTEXT_CHECKS
         if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
@@ -248,7 +248,7 @@ private:
 
 static_assert(Session<SH2PCSession>);
 static_assert(DirectSession<SH2PCSession>);
-static_assert(SessionIO<SH2PCSession, UInt_T<SH2PCSession::DirectCtx, 32>>);
+static_assert(SessionIO<SH2PCSession, UInt_T<SH2PCSession::ctx_t, 32>>);
 
 }  // namespace emp
 #endif  // EMP_SH2PC_SESSION_H__

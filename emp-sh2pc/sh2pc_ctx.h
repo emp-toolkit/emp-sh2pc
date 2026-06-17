@@ -1,7 +1,7 @@
 #ifndef EMP_SH2PC_CTX_H__
 #define EMP_SH2PC_CTX_H__
 
-// SH2PCCtx — the semi-honest 2PC gate context (SH2PCSession::DirectCtx). It is a C++20
+// SH2PCCtx — the semi-honest 2PC gate context (SH2PCSession::ctx_t). It is a C++20
 // BooleanContext: gate ops return garbled-label wires (AND via the half-gate
 // garble/eval, XOR/NOT/const over labels). Gates are eager — an AND garbles or
 // evaluates one half-gate over the network as it is called — so the context is

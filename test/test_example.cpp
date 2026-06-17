@@ -6,12 +6,12 @@ using namespace std;
 // Millionaires' comparison over SH2PCSession: on signed 32-bit
 // inputs, plus the running AND-gate count from the context.
 
-using SI = Int_T<SH2PCSession::DirectCtx, 32>;
+using SI = Int_T<SH2PCSession::ctx_t, 32>;
 
 void test_millionare(SH2PCSession& sess, int number) {
 	SI a = sess.input<SI>(ALICE, (int64_t)number);
 	SI b = sess.input<SI>(BOB,   (int64_t)number);
-	Bit_T<SH2PCSession::DirectCtx> res = a > b;
+	Bit_T<SH2PCSession::ctx_t> res = a > b;
 
 	cout << "ALICE larger?\t" << sess.reveal(res, PUBLIC).value() << endl;
 }
