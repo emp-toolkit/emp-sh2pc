@@ -25,6 +25,7 @@
 #include "emp-tool/ir/session/session_io.h"            // Session / DirectSession / SessionIO / encode_value_bits
 #include "emp-tool/runtime/crypto/mitccrh.h"
 #include "emp-ot/emp-ot.h"
+#include <array>
 #include <cstring>
 #include <memory>
 #include <optional>
@@ -99,13 +100,10 @@ public:
     V input(int owner, const typename V::clear_t& clear) {
         static_assert(std::same_as<typename V::context_type, DirectCtx>,
             "SH2PCSession::input<V>: V must be a value over this session's DirectCtx");
-        const int W = V::width();
-        std::vector<bool> e = encode_value_bits<V>(clear, "SH2PCSession::input");
-        // feed_ wants a contiguous bool[]; std::vector<bool> is bit-packed, so copy.
-        auto bb = std::make_unique<bool[]>(W);
-        for (int i = 0; i < W; ++i) bb[i] = (bool)e[i];
-        std::vector<block> wires(W);
-        feed_(wires.data(), owner, bb.get(), (size_t)W);
+        constexpr int W = V::width();
+        const std::array<bool, (std::size_t)W> bits = V::encode(clear);   // stack; width is the type
+        std::array<block, (std::size_t)W> wires{};
+        feed_(wires.data(), owner, bits.data(), (size_t)W);
         return V::from_wires(ctx_, wires.data());
     }
 
@@ -122,13 +120,13 @@ public:
 #if EMP_CONTEXT_CHECKS
         if (v.context() != &ctx_) error("SH2PCSession::reveal: value is bound to a different context");
 #endif
-        const int W = V::width();
-        std::vector<block> wires(W);
+        constexpr int W = V::width();
+        std::array<block, (std::size_t)W> wires{};
         v.pack_wires(wires.data());
-        auto bb = std::make_unique<bool[]>(W);
-        reveal_(bb.get(), recipient, wires.data(), (size_t)W);
+        std::array<bool, (std::size_t)W> bb{};
+        reveal_(bb.data(), recipient, wires.data(), (size_t)W);
         if (recipient == PUBLIC || recipient == XOR || recipient == party_)
-            return std::optional<typename V::clear_t>(V::decode(bb.get()));
+            return std::optional<typename V::clear_t>(V::decode(bb.data()));
         return std::nullopt;
     }
 
