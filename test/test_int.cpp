@@ -1,5 +1,4 @@
 #include <typeinfo>
-#include <cassert>
 #include "emp-sh2pc/emp-sh2pc.h"
 
 using namespace emp;
@@ -19,8 +18,9 @@ static block test_seed;
 using U32 = UInt_T<SH2PCSession::ctx_t, 32>;
 
 template <typename Op, typename Op2>
-void test_int(SH2PCSession& sess, int runs = kRuns) {
+int test_int(SH2PCSession& sess, int runs = kRuns) {
 	PRG prg(&test_seed);
+	int bad = 0;
 	for (int i = 0; i < runs; ++i) {
 		uint32_t ia, ib;
 		prg.random_data_unaligned(&ia, 4);
@@ -33,11 +33,13 @@ void test_int(SH2PCSession& sess, int runs = kRuns) {
 
 		uint32_t expected = Op()(ia, ib);
 		uint32_t actual   = (uint32_t)sess.reveal(res, PUBLIC).value();
-		if (actual != expected)
+		if (actual != expected) {
 			cout << ia << "\t" << ib << "\t" << expected << "\t" << actual << endl << flush;
-		assert(actual == expected);
+			++bad;   // a real check: counted, not assert() (compiled out under NDEBUG)
+		}
 	}
-	cout << typeid(Op2).name() << "\t\t\tDONE" << endl;
+	cout << typeid(Op2).name() << "\t\t\t" << (bad ? "FAIL" : "DONE") << endl;
+	return bad;
 }
 
 int main(int argc, char** argv) {
@@ -57,15 +59,18 @@ int main(int argc, char** argv) {
 
 	SH2PCSession sess(&io, party);
 
-	test_int<std::plus<uint32_t>,       std::plus<U32>>(sess);
-	test_int<std::minus<uint32_t>,      std::minus<U32>>(sess);
-	test_int<std::multiplies<uint32_t>, std::multiplies<U32>>(sess);
-	test_int<std::divides<uint32_t>,    std::divides<U32>>(sess);
-	test_int<std::modulus<uint32_t>,    std::modulus<U32>>(sess);
+	int fails = 0;
+	fails += test_int<std::plus<uint32_t>,       std::plus<U32>>(sess);
+	fails += test_int<std::minus<uint32_t>,      std::minus<U32>>(sess);
+	fails += test_int<std::multiplies<uint32_t>, std::multiplies<U32>>(sess);
+	fails += test_int<std::divides<uint32_t>,    std::divides<U32>>(sess);
+	fails += test_int<std::modulus<uint32_t>,    std::modulus<U32>>(sess);
 
-	test_int<std::bit_and<uint32_t>,    std::bit_and<U32>>(sess);
-	test_int<std::bit_or<uint32_t>,     std::bit_or<U32>>(sess);
-	test_int<std::bit_xor<uint32_t>,    std::bit_xor<U32>>(sess);
+	fails += test_int<std::bit_and<uint32_t>,    std::bit_and<U32>>(sess);
+	fails += test_int<std::bit_or<uint32_t>,     std::bit_or<U32>>(sess);
+	fails += test_int<std::bit_xor<uint32_t>,    std::bit_xor<U32>>(sess);
 
 	sess.finalize();
+	if (party == BOB) cout << "test_int: " << (fails ? "FAILED" : "PASS") << endl;
+	return fails ? 1 : 0;
 }

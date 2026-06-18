@@ -6,80 +6,80 @@ using namespace std;
 // Bit smoke test over SH2PCSession: AND / XOR / NOT and the
 // XOR-share reveal, over public / ALICE / BOB inputs.
 
-NetIO* io;
-int party;
-static SH2PCSession* g_ctx;
-
 using B = Bit_T<SH2PCSession::ctx_t>;
 
-static B mkbit(bool v, int owner) {
-	if (owner == PUBLIC) return B::constant(g_ctx->ctx(), v);
-	return g_ctx->input<B>(owner, v);
+static B mkbit(SH2PCSession& sess, bool v, int owner) {
+	if (owner == PUBLIC) return B::constant(sess.ctx(), v);
+	return sess.input<B>(owner, v);
 }
 
-void test_bit() {
+static int test_bit(SH2PCSession& sess, NetIO& io, int party) {
 	bool b[] = {true, false};
 	int p[] = {PUBLIC, ALICE, BOB};
+	int bad = 0;
 
 	for (int i = 0; i < 2; ++i)
 		for (int j = 0; j < 3; ++j)
 			for (int k = 0; k < 2; ++k)
 				for (int l = 0; l < 3; ++l) {
 					{
-						B b1 = mkbit(b[i], p[j]);
-						B b2 = mkbit(b[k], p[l]);
-						bool res = g_ctx->reveal(b1 & b2, PUBLIC).value();
+						B b1 = mkbit(sess, b[i], p[j]);
+						B b2 = mkbit(sess, b[k], p[l]);
+						bool res = sess.reveal(b1 & b2, PUBLIC).value();
 						if (res != (b[i] and b[k])) {
-							cout << "AND" << i << " " << j << " " << k << " " << l << " " << res << endl;
-							error("test bit error!");
+							cout << "AND " << i << " " << j << " " << k << " " << l << " " << res << endl; ++bad;
 						}
-						res = g_ctx->reveal(b1 & b1, PUBLIC).value();
-						if (res != b[i]) { cout << "AND" << i << " " << j << res << endl; error("test bit error!"); }
-
-						res = g_ctx->reveal(b1 & (!b1), PUBLIC).value();
-						if (res) { cout << "AND" << i << " " << j << res << endl; error("test bit error!"); }
+						if (sess.reveal(b1 & b1, PUBLIC).value() != b[i]) {
+							cout << "AND-self " << i << " " << j << endl; ++bad;
+						}
+						if (sess.reveal(b1 & (!b1), PUBLIC).value()) {
+							cout << "AND-not " << i << " " << j << endl; ++bad;
+						}
 					}
 					{
-						B b1 = mkbit(b[i], p[j]);
-						B b2 = mkbit(b[k], p[l]);
-						bool res = g_ctx->reveal(b1 ^ b2, PUBLIC).value();
+						B b1 = mkbit(sess, b[i], p[j]);
+						B b2 = mkbit(sess, b[k], p[l]);
+						bool res = sess.reveal(b1 ^ b2, PUBLIC).value();
 						if (res != (b[i] xor b[k])) {
-							cout << "XOR" << i << " " << j << " " << k << " " << l << " " << res << endl;
-							error("test bit error!");
+							cout << "XOR " << i << " " << j << " " << k << " " << l << " " << res << endl; ++bad;
 						}
-						res = g_ctx->reveal(b1 ^ b1, PUBLIC).value();
-						if (res) { cout << "XOR" << i << " " << j << res << endl; error("test bit error!"); }
-
-						res = g_ctx->reveal(b1 ^ (!b1), PUBLIC).value();
-						if (!res) { cout << "XOR" << i << " " << j << res << endl; error("test bit error!"); }
+						if (sess.reveal(b1 ^ b1, PUBLIC).value()) {
+							cout << "XOR-self " << i << " " << j << endl; ++bad;
+						}
+						if (!sess.reveal(b1 ^ (!b1), PUBLIC).value()) {
+							cout << "XOR-not " << i << " " << j << endl; ++bad;
+						}
 					}
 					{
-						B b1 = mkbit(b[i], p[j]);
-						B b2 = mkbit(b[k], p[l]);
-						bool res = g_ctx->reveal(b1 ^ b2, XOR).value();
+						// XOR-share reveal: each party gets a share; reconstruct and
+						// check on BOB.
+						B b1 = mkbit(sess, b[i], p[j]);
+						B b2 = mkbit(sess, b[k], p[l]);
+						bool res = sess.reveal(b1 ^ b2, XOR).value();
 						if (party == ALICE) {
-							io->send_data(&res, 1);
+							io.send_data(&res, 1);
 						} else {
-							bool tmp; io->recv_data(&tmp, 1);
+							bool tmp; io.recv_data(&tmp, 1);
 							res = res != tmp;
 							if (res != (b[i] xor b[k])) {
-								cout << "XOR" << i << " " << j << " " << k << " " << l << " " << res << endl;
-								error("test bit error!");
+								cout << "XOR-share " << i << " " << j << " " << k << " " << l << " " << res << endl; ++bad;
 							}
 						}
 					}
 				}
-	io->flush();
-	cout << "success!" << endl;
+	io.flush();
+	return bad;
 }
 
 int main(int argc, char** argv) {
-	int port;
+	int port, party;
 	parse_party_and_port(argv, &party, &port);
-	NetIO netio(party == ALICE ? nullptr : "127.0.0.1", port);
-	io = &netio;
-	SH2PCSession sess(io, party);
-	g_ctx = &sess;
-	test_bit();
+	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+	SH2PCSession sess(&io, party);
+
+	int fails = test_bit(sess, io, party);
+
 	sess.finalize();
+	if (party == BOB) cout << "test_bit: " << (fails ? "FAILED" : "PASS") << endl;
+	return fails ? 1 : 0;
 }
