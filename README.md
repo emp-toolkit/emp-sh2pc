@@ -27,7 +27,8 @@ protocol state, and `sess.direct_ctx()` is the gate context your values are buil
 #include <emp-sh2pc/emp-sh2pc.h>
 using namespace emp;
 
-NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+int party = parse_party(argv);   // argv[1]; port/IP come from $EMP_PORT / $EMP_PEER_IP
+NetIO io(party == ALICE ? nullptr : peer_ip(), peer_port());
 SH2PCSession sess(&io, party);
 
 using Ctx = SH2PCSession::DirectCtx;        // the gate context values are built over

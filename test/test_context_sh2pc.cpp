@@ -4,7 +4,7 @@
 // input<T>()/reveal<T>() own the OT. Demonstrates a templated integer kernel and
 // an IR-replay float builtin. C++20.
 
-#include "emp-sh2pc/emp-sh2pc.h"          // NetIO, parse_party_and_port, ALICE/BOB
+#include "emp-sh2pc/emp-sh2pc.h"          // NetIO, parse_party, ALICE/BOB
 #include "emp-sh2pc/sh2pc_session.h"      // SH2PCSession
 #include "emp-tool/circuits/typed.h"
 #include <cstdint>
@@ -14,10 +14,11 @@ using namespace emp;
 
 int main(int argc, char** argv) {
     int port, party;
-    parse_party_and_port(argv, &party, &port);
-    NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+    party = parse_party(argv);
+    port = peer_port();
+    auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
 
-    SH2PCSession sess(&io, party);              // owns crypto/IO/OT/Delta — no global backend
+    SH2PCSession sess(io.get(), party);              // owns crypto/IO/OT/Delta — no global backend
     int fails = 0;
 
     // 1) keep-templated kernel: UInt32 add (ALICE owns a, BOB owns b).

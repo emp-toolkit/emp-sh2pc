@@ -44,20 +44,21 @@ int test_int(SH2PCSession& sess, int runs = kRuns) {
 
 int main(int argc, char** argv) {
 	int port, party;
-	parse_party_and_port(argv, &party, &port);
-	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+	party = parse_party(argv);
+	port = peer_port();
+	auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
 
 	// Agree on the PRG seed for matched test inputs, before the session opens
 	// so it isn't folded into the garbled-circuit transcript.
 	if (party == ALICE) {
 		PRG().random_block(&test_seed, 1);
-		io.send_data(&test_seed, sizeof(block));
+		io->send_data(&test_seed, sizeof(block));
 	} else {
-		io.recv_data(&test_seed, sizeof(block));
+		io->recv_data(&test_seed, sizeof(block));
 	}
-	io.flush();
+	io->flush();
 
-	SH2PCSession sess(&io, party);
+	SH2PCSession sess(io.get(), party);
 
 	int fails = 0;
 	fails += test_int<std::plus<uint32_t>,       std::plus<U32>>(sess);

@@ -1,33 +1,34 @@
 #!/bin/bash
 # Two-party local test harness. Pick a fresh random port per invocation so back-
-# to-back ctest runs don't collide on a socket still in TIME_WAIT.
-PORT=$(( (RANDOM % 30000) + 20000 ))
+# to-back ctest runs don't collide on a socket still in TIME_WAIT. Port travels
+# via EMP_PORT (read by peer_port()); only the party id is a positional arg.
+export EMP_PORT=$(( (RANDOM % 30000) + 20000 ))
 if [ "$1" == "-p1" ]
 then
    shift
-   perf record  $1 1 $PORT & (sleep 0.1;  $1 2 $PORT)
+   perf record  $1 1 & (sleep 0.1;  $1 2)
 elif [ "$1" == "-p2" ]
 then
    shift
-   (sleep 0.1; $1 1 $PORT) & (perf record $1 2 $PORT)
+   (sleep 0.1; $1 1) & (perf record $1 2)
 
 elif [ "$1" == "-m1" ]
 then
    shift
-   valgrind --leak-check=full $1 1 $PORT & $1 2 $PORT
+   valgrind --leak-check=full $1 1 & $1 2
 elif [ "$1" == "-m2" ]
 then
    shift
-   $1 1 $PORT & valgrind --leak-check=full $1 2 $PORT
+   $1 1 & valgrind --leak-check=full $1 2
 elif [ "$1" == "-t1" ]
 then
    shift
-   time $1 1 $PORT & $1 2 $PORT
+   time $1 1 & $1 2
 elif [ "$1" == "-t2" ]
 then
    shift
-   $1 1 $PORT & time $1 2 $PORT
+   $1 1 & time $1 2
 
 else
-  (sleep 0.05; $1 1 $PORT) &  $1 2 $PORT
+  (sleep 0.05; $1 1) &  $1 2
 fi

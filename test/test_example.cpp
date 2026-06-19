@@ -18,12 +18,13 @@ void test_millionare(SH2PCSession& sess, int number) {
 
 int main(int argc, char** argv) {
 	int port, party;
-	parse_party_and_port(argv, &party, &port);
+	party = parse_party(argv);
+	port = peer_port();
 	int num = 20;
-	if (argc > 3) num = atoi(argv[3]);
-	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+	if (argc > 2) num = atoi(argv[2]);
+	auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
 
-	SH2PCSession sess(&io, party);
+	SH2PCSession sess(io.get(), party);
 	test_millionare(sess, num);
 	cout << sess.num_and() << endl;
 	sess.finalize();

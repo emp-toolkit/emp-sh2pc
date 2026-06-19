@@ -148,23 +148,24 @@ int fp_checks(SH2PCSession& sess) {
 
 int main(int argc, char** argv) {
 	int port, party;
-	parse_party_and_port(argv, &party, &port);
-	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+	party = parse_party(argv);
+	port = peer_port();
+	auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
 
 	// Agree on the PRG seed before the session opens so matched inputs are not
 	// folded into the garbled-circuit transcript.
 	block test_seed;
 	if (party == ALICE) {
 		PRG().random_block(&test_seed, 1);
-		io.send_data(&test_seed, sizeof(block));
+		io->send_data(&test_seed, sizeof(block));
 	} else {
-		io.recv_data(&test_seed, sizeof(block));
+		io->recv_data(&test_seed, sizeof(block));
 	}
-	io.flush();
+	io->flush();
 	PRG prg(&test_seed);
 
 	// Larger BOB-input COT batch keeps repeated float ops off the refill path.
-	SH2PCSession sess(&io, party, 1024 * 1024);
+	SH2PCSession sess(io.get(), party, 1024 * 1024);
 
 	int fails = 0;
 	fails += fp_checks(sess);

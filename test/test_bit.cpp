@@ -73,11 +73,12 @@ static int test_bit(SH2PCSession& sess, NetIO& io, int party) {
 
 int main(int argc, char** argv) {
 	int port, party;
-	parse_party_and_port(argv, &party, &port);
-	NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
-	SH2PCSession sess(&io, party);
+	party = parse_party(argv);
+	port = peer_port();
+	auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
+	SH2PCSession sess(io.get(), party);
 
-	int fails = test_bit(sess, io, party);
+	int fails = test_bit(sess, *io, party);
 
 	sess.finalize();
 	if (party == BOB) cout << "test_bit: " << (fails ? "FAILED" : "PASS") << endl;

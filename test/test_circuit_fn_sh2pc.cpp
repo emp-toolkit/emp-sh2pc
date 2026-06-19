@@ -3,7 +3,7 @@
 // live SH2PCSession context — compile-once / run-on-any-context. Both parties compile the
 // same (deterministic) circuit and replay it in lockstep. C++20.
 
-#include "emp-sh2pc/emp-sh2pc.h"           // NetIO, parse_party_and_port, SH2PCSession
+#include "emp-sh2pc/emp-sh2pc.h"           // NetIO, parse_party, SH2PCSession
 #include "emp-tool/circuits/frontend/circuit_fn.h"  // frontend::compile / run
 #include "emp-tool/circuits/frontend/rec.h"         // rec::UInt / rec::Float shapes
 #include <cstdint>
@@ -17,10 +17,11 @@ using F32 = Float_T<SH2PCSession::ctx_t, 32>;
 
 int main(int argc, char** argv) {
     int port, party;
-    parse_party_and_port(argv, &party, &port);
-    NetIO io(party == ALICE ? nullptr : "127.0.0.1", port);
+    party = parse_party(argv);
+    port = peer_port();
+    auto io = (party == ALICE) ? NetIO::listen(port) : NetIO::connect(peer_ip(), port);
 
-    SH2PCSession sess(&io, party);
+    SH2PCSession sess(io.get(), party);
     int fails = 0;
 
     // Compile once, host-side (no protocol, no I/O): pure circuit functions.
