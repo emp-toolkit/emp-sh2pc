@@ -13,7 +13,8 @@ static int test_int_reveal(int party, int port, int number) {
 	// Brief pause so the previous iteration's listener has fully released the
 	// port before this one re-binds it (same-port sequential reconnects).
 	usleep(100);
-	auto netio = (party == ALICE) ? NetIO::listen(port, true) : NetIO::connect(peer_ip(), port, true);
+	auto netio = (party == ALICE) ? NetIO::listen(port, /*quiet=*/true)
+	                              : NetIO::connect(peer_ip(), port, /*quiet=*/true);
 	SH2PCSession sess(netio.get(), party, 1024);
 
 	SI a = sess.input<SI>(ALICE, (int64_t)number);

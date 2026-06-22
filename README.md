@@ -21,7 +21,7 @@ Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-to
 ## Usage
 
 The public handle is one session, `SH2PCSession`: it owns the IO channel and all
-protocol state, and `sess.direct_ctx()` is the gate context your values are built over.
+protocol state, and `sess.ctx()` is the gate context your values are built over.
 
 ```cpp
 #include <emp-sh2pc/emp-sh2pc.h>
@@ -31,11 +31,11 @@ int party = parse_party(argv);   // argv[1]; port/IP come from $EMP_PORT / $EMP_
 NetIO io(party == ALICE ? nullptr : peer_ip(), peer_port());
 SH2PCSession sess(&io, party);
 
-using Ctx = SH2PCSession::DirectCtx;        // the gate context values are built over
+using Ctx = SH2PCSession::ctx_t;        // the gate context values are built over
 using UInt32 = UInt_T<Ctx, 32>;
 auto a = sess.input<UInt32>(ALICE, av);   // each party owns its input
 auto b = sess.input<UInt32>(BOB,   bv);
-auto c = a + b;                            // eager half-gate over sess.direct_ctx()
+auto c = a + b;                            // eager half-gate over sess.ctx()
 uint32_t out = sess.reveal(c, PUBLIC).value();  // open the result to both parties
 ```
 
@@ -45,9 +45,9 @@ both parties (each its own secret-share) for `reveal(v, XOR)` — and `std::null
 on a party that does not. The session names no value family — circuit values are
 emp-tool's context-bound types (`UInt_T<Ctx,N>`, `Int_T<Ctx,N>`, `Float_T<Ctx,W>`,
 `BitVec_T<Ctx,N>`, `Bit_T<Ctx>`), and `input`/`reveal` are generic over any `WireValue`.
-Public constants use `UInt32::constant(sess.direct_ctx(), 1)`. A reusable circuit is
+Public constants use `UInt32::constant(sess.ctx(), 1)`. A reusable circuit is
 compiled once with the emp-tool frontend and replayed over the session's context with
-`frontend::run(sess.direct_ctx(), circuit, args...)`. There is no global backend — the
+`frontend::run(sess.ctx(), circuit, args...)`. There is no global backend — the
 session is explicit.
 
 ## Requirements
@@ -109,15 +109,16 @@ wrapper script.
   e.g. `./run ./build/test_bit` or
        `./run ./build/test_example 123`.
 
-* Two machines (IP addresses hardcoded in the test source):
+* Two machines: the shared port is `$EMP_PORT` (default 12345) and party 2
+  dials `$EMP_PEER_IP`; only the party id is a positional arg:
 
-  `./build/[binary] 1 12345 [more opts]` on one machine and
-  `./build/[binary] 2 12345 [more opts]` on the other.
+  `./build/[binary] 1 [more opts]` on one machine and
+  `EMP_PEER_IP=<party-1-ip> ./build/[binary] 2 [more opts]` on the other.
 
 * `test_example` takes a per-party integer; the two parties must use
   different numbers:
 
-  `./build/test_example 1 12345 123 & ./build/test_example 2 12345 124`
+  `./build/test_example 1 123 & EMP_PEER_IP=<party-1-ip> ./build/test_example 2 124`
 
 `ctest --test-dir build --output-on-failure` runs the entire suite.
 
