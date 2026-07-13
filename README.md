@@ -28,8 +28,9 @@ protocol state, and `sess.ctx()` is the gate context your values are built over.
 using namespace emp;
 
 int party = parse_party(argv);   // argv[1]; port/IP come from $EMP_PORT / $EMP_PEER_IP
-NetIO io(party == ALICE ? nullptr : peer_ip(), peer_port());
-SH2PCSession sess(&io, party);
+auto io = (party == ALICE) ? NetIO::listen(peer_port())
+                           : NetIO::connect(peer_ip(), peer_port());
+SH2PCSession sess(io.get(), party);
 
 using Ctx = SH2PCSession::ctx_t;        // the gate context values are built over
 using UInt32 = UInt_T<Ctx, 32>;
@@ -104,10 +105,11 @@ wrapper script.
 
 * Local machine, both parties on `localhost`:
 
-  `./run ./build/[binary] [more opts]`
+  `./run ./build/[binary]`
 
-  e.g. `./run ./build/test_bit` or
-       `./run ./build/test_example 123`.
+  e.g. `./run ./build/test_bit` or `./run ./build/test_example`.
+  `run` forwards only the party id, so a per-party integer (as
+  `test_example` takes) needs the direct invocation shown below.
 
 * Two machines: the shared port is `$EMP_PORT` (default 12345) and party 2
   dials `$EMP_PEER_IP`; only the party id is a positional arg:
