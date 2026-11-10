@@ -90,8 +90,8 @@ public:
     ctx_t& ctx() { return ctx_; }
 
     int party() const { return party_; }
-    // AND-gate count so far (mitccrh advances gid by 2 per garbled AND).
-    uint64_t num_and() const { return mitccrh_.gid / 2; }
+    // AND-gate count so far: garbling or evaluating an AND hashes two gids.
+    uint64_t num_and() const { return mitccrh_.next_gid() / 2; }
 
     // ---- typed I/O (the only way clear values enter / leave a circuit) ----
     // input<V>(owner, clear): V is any WireValue over THIS session's ctx_t, e.g.
