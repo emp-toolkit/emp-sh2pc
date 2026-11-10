@@ -16,6 +16,8 @@
 
 namespace emp {
 
+template <class OTExt> class SH2PCSessionT;
+
 class SH2PCCtx {
 public:
     // The wire IS the live garbled label: block (__m128i) is semiregular, which
@@ -45,7 +47,7 @@ public:
     }
 
 private:
-    friend class SH2PCSession;
+    template <class> friend class SH2PCSessionT;
     // Bind to the owning session's protocol primitives. party / io / delta /
     // constant are fixed once (after the session handshake) and copied by value;
     // mitccrh is shared by pointer (the session owns it, gid advances per AND).
