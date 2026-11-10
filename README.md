@@ -16,7 +16,7 @@
 >   the API is not yet frozen and headers may move between alphas.
 >   Requires emp-tool ≥ 1.0.0-alpha and emp-ot ≥ 1.0.0-alpha.
 
-Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` over a `NetIO` channel, with batched IKNP COT for input wires.
+Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` over a `NetIO` channel, with batched correlated OT (IKNP by default) for the evaluator's input wires.
 
 ## Usage
 
@@ -50,6 +50,22 @@ Public constants use `UInt32::constant(sess.ctx(), 1)`. A reusable circuit is
 compiled once with the emp-tool frontend and replayed over the session's context with
 `frontend::run(sess.ctx(), circuit, args...)`. There is no global backend — the
 session is explicit.
+
+### Choosing the OT extension
+
+`SH2PCSession` is `SH2PCSessionT<IKNP>`. `SH2PCSessionT<OTExt>` takes any emp-ot OT
+extension for the correlated OTs behind BOB's private input bits, the only inputs
+that use OT; both parties must choose the same one:
+
+```cpp
+SH2PCSessionT<SoftSpoken<4>> sess(io.get(), party);   // or SH2PCSessionT<Ferret>
+```
+
+`SoftSpoken<k>` sends fewer bytes per OT than IKNP, fewer as `k` grows, for more AES
+work per OT. `Ferret` sends the fewest bytes per OT but has a larger fixed setup and
+more computation per OT, so it pays off when BOB's inputs are large and bandwidth is
+the bottleneck. Values are built over the same `ctx_t` whichever extension the
+session uses.
 
 ## Requirements
 

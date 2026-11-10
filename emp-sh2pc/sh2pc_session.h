@@ -2,11 +2,12 @@
 #define EMP_SH2PC_SESSION_H__
 
 // SH2PCSession — the public handle for semi-honest 2PC (garbled circuits), the
-// SH2PC peer of ClearSession. It owns ALL protocol state — IO, IKNP-OT, Delta, the
-// synchronized PRG, the half-gate MITCCRH/constants, and the COT refill buffer —
-// and the I/O boundary (input / reveal); sess.ctx() is the gate context values are
-// built over. Gates are eager (an AND garbles/evaluates as it is called), so there
-// is no chunk/checkpoint model: a value's wire IS the live garbled label.
+// SH2PC peer of ClearSession. It owns ALL protocol state — IO, the OT extension,
+// Delta, the synchronized PRG, the half-gate MITCCRH/constants, and the COT refill
+// buffer — and the I/O boundary (input / reveal); sess.ctx() is the gate context
+// values are built over. Gates are eager (an AND garbles/evaluates as it is
+// called), so there is no chunk/checkpoint model: a value's wire IS the live
+// garbled label.
 //
 //   SH2PCSession sess(io, party);
 //   using Ctx = SH2PCSession::ctx_t; using UInt32 = UInt_T<Ctx, 32>;
@@ -17,6 +18,14 @@
 //
 // Public constants stay value/context-level: UInt32::constant(sess.ctx(), 7).
 // There is no global backend and no virtual dispatch — the session is explicit.
+//
+// SH2PCSession is SH2PCSessionT<IKNP>. SH2PCSessionT<OTExt> takes any emp-ot OT
+// extension (IKNP, SoftSpoken<k>, Ferret) for the correlated OTs behind BOB's
+// private input bits, the only inputs that use OT; both parties must choose the
+// same one. SoftSpoken<k> sends fewer bytes per OT than IKNP, fewer as k grows,
+// for more AES work per OT. Ferret sends the fewest bytes per OT but has a larger
+// fixed setup and more computation per OT, so it pays off when BOB's inputs are
+// large and bandwidth is the bottleneck.
 
 #include "emp-sh2pc/sh2pc_ctx.h"                 // SH2PCCtx (Wire = block)
 #include "emp-tool/emp-tool.h"
@@ -34,7 +43,11 @@
 
 namespace emp {
 
-class SH2PCSession {
+template <class OTExt = IKNP>
+class SH2PCSessionT {
+    static_assert(std::is_base_of_v<OTExtension, OTExt>,
+                  "SH2PCSessionT<OTExt>: OTExt must be an emp-ot OT extension "
+                  "(IKNP, SoftSpoken<k>, Ferret)");
 public:
     using ctx_t = SH2PCCtx;   // the direct/user gate context; values are UInt_T<ctx_t,N> etc.
     // reveal returns std::optional<clear_t> (the session contract): the value is
@@ -43,7 +56,7 @@ public:
     // and std::nullopt on a party that does not learn it.
     template <class V> using reveal_t = std::optional<typename V::clear_t>;
 
-    SH2PCSession(IOChannel* io, int party, int batch_sz = 1024 * 16)
+    SH2PCSessionT(IOChannel* io, int party, int batch_sz = 1024 * 16)
         : party_(party), io_(io), batch_size_(batch_sz) {
         if (party_ != ALICE && party_ != BOB)
             error("SH2PCSession: party must be ALICE or BOB");
@@ -58,7 +71,14 @@ public:
             constant_[1] = constant_[1] ^ delta_;
             io_->send_block(tmp + 1, 1);
             mitccrh_.setS(tmp[1]);
-            ot_ = std::make_unique<IKNP>(ALICE, io_, /*malicious=*/false);
+            // A fresh session id, set before the OT extension starts, separates
+            // its hash inputs (and those of its base OTs) from every other
+            // session's.
+            block sid;
+            PRG().random_block(&sid, 1);
+            io_->send_block(&sid, 1);
+            ot_ = std::make_unique<OTExt>(ALICE, io_, /*malicious=*/false);
+            ot_->set_sid(sid);
             bool db[128];
             const uint8_t* d = reinterpret_cast<const uint8_t*>(&delta_);
             for (int i = 0; i < 128; ++i) db[i] = (d[i / 8] >> (i % 8)) & 1;
@@ -70,7 +90,9 @@ public:
             io_->recv_block(constant_, 2);
             block tmp; io_->recv_block(&tmp, 1);
             mitccrh_.setS(tmp);
-            ot_ = std::make_unique<IKNP>(BOB, io_, /*malicious=*/false);
+            block sid; io_->recv_block(&sid, 1);
+            ot_ = std::make_unique<OTExt>(BOB, io_, /*malicious=*/false);
+            ot_->set_sid(sid);
             block seed; io_->recv_block(&seed, 1);
             shared_prg_.reseed(&seed);
         }
@@ -79,8 +101,8 @@ public:
         refill_();
         ctx_.bind_(party_, io_, delta_, constant_, &mitccrh_);
     }
-    SH2PCSession(const SH2PCSession&) = delete;
-    SH2PCSession& operator=(const SH2PCSession&) = delete;
+    SH2PCSessionT(const SH2PCSessionT&) = delete;
+    SH2PCSessionT& operator=(const SH2PCSessionT&) = delete;
 
     void finalize() {}
 
@@ -147,7 +169,7 @@ private:
     block constant_[2];
     block delta_{};                       // meaningful for ALICE (the garbler)
     MITCCRH<8> mitccrh_;
-    std::unique_ptr<IKNP> ot_;
+    std::unique_ptr<OTExt> ot_;
     PRG shared_prg_;
     std::unique_ptr<block[]> buf_;
     std::unique_ptr<bool[]>  buff_;
@@ -245,6 +267,8 @@ private:
         }
     }
 };
+
+using SH2PCSession = SH2PCSessionT<>;
 
 static_assert(Session<SH2PCSession>);
 static_assert(DirectSession<SH2PCSession>);

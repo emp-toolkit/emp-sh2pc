@@ -19,6 +19,12 @@ static_assert(std::is_same_v<SH2PCSession::ctx_t, SH2PCCtx>);
 static_assert(BooleanContext<SH2PCCtx>);
 static_assert(std::is_same_v<UInt_T<SH2PCSession::ctx_t, 32>, UInt_T<SH2PCCtx, 32>>);
 
+// Any OT extension gives the same session surface over the same gate context.
+static_assert(std::is_same_v<SH2PCSession, SH2PCSessionT<IKNP>>);
+static_assert(Session<SH2PCSessionT<SoftSpoken<4>>>);
+static_assert(DirectSession<SH2PCSessionT<Ferret>>);
+static_assert(std::is_same_v<SH2PCSessionT<Ferret>::ctx_t, SH2PCSession::ctx_t>);
+
 // reveal returns std::optional<clear_t> (nullopt on a party that does not learn it).
 static_assert(std::is_same_v<
     SH2PCSession::reveal_t<UInt_T<SH2PCSession::ctx_t, 32>>,
