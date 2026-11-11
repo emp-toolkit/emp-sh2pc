@@ -9,12 +9,13 @@
 > - **Existing projects pinned to a published release: stay on `0.3.0`** —
 >   branch [`v0.3.x`](https://github.com/emp-toolkit/emp-sh2pc/tree/v0.3.x).
 >   Bug fixes and security patches will be backported to `v0.3.x`.
-> - **New projects, or able to track a moving API: use the development branch**
->   (this branch, `main`). It will become `1.0.0-alpha` after a polish
->   pass and then `1.0.0`. Builds against emp-tool / emp-ot ≥ 1.0
->   (unified `Backend` execution layer, de-templated IO and OT) — but
->   the API is not yet frozen and headers may move between alphas.
->   Requires emp-tool ≥ 1.0.0-alpha and emp-ot ≥ 1.0.0-alpha.
+> - **New projects: use `v1.0.0-alpha.2`** —
+>   tag [`v1.0.0-alpha.2`](https://github.com/emp-toolkit/emp-sh2pc/releases/tag/v1.0.0-alpha.2),
+>   the first alpha of the 1.0 line, numbered to match the emp-tool and emp-ot
+>   `v1.0.0-alpha.2` it pairs with and requires. The API may change between
+>   alpha tags and before the final `1.0.0`, so pin to a tag. CMake package
+>   metadata is numeric `1.0.0` (`project(VERSION)` cannot carry a prerelease
+>   suffix); the alpha status lives in the git tag.
 
 Header-only semi-honest 2PC built on top of [emp-tool](https://github.com/emp-toolkit/emp-tool) and [emp-ot](https://github.com/emp-toolkit/emp-ot): garbled-circuit evaluation (half-gates) for `Bit` / `Integer` / `Float` over a `NetIO` channel, with batched correlated OT (IKNP by default) for the evaluator's input wires.
 
