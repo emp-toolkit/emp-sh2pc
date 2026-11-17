@@ -3,6 +3,17 @@
 Notable changes to emp-sh2pc. Versions are the git tags. CMake package
 metadata is numeric (see the README's version guidance).
 
+## Unreleased
+
+### Changed
+
+- A session's OT extension takes its session id from the IO channel (emp-tool's
+  `IOChannel::next_session_id()`, drawn from a root the parties agree on when
+  they connect) instead of an id ALICE picks and sends. On a channel without a
+  session root the id is zero. Transcripts change, so both parties must upgrade
+  together. Requires emp-tool's channel session ids and emp-ot's default to
+  them.
+
 ## v1.0.0-alpha.2
 
 First tagged alpha of the 1.0 development line, numbered to match the

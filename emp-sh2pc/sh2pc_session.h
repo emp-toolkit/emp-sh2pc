@@ -26,6 +26,12 @@
 // for more AES work per OT. Ferret sends the fewest bytes per OT but has a larger
 // fixed setup and more computation per OT, so it pays off when BOB's inputs are
 // large and bandwidth is the bottleneck.
+//
+// When the session starts, its OT extension takes the channel's next session id
+// (IOChannel::next_session_id()), which keeps its hash inputs, and its base
+// OTs', apart from every other session's. Both parties start their sessions on a
+// channel in the same order, so they draw the same id. On a channel without a
+// session root (IOChannel::has_session_root()), the id is zero.
 
 #include "emp-sh2pc/sh2pc_ctx.h"                 // SH2PCCtx (Wire = block)
 #include "emp-tool/emp-tool.h"
@@ -71,14 +77,7 @@ public:
             constant_[1] = constant_[1] ^ delta_;
             io_->send_block(tmp + 1, 1);
             mitccrh_.setS(tmp[1]);
-            // A fresh session id, set before the OT extension starts, separates
-            // its hash inputs (and those of its base OTs) from every other
-            // session's.
-            block sid;
-            PRG().random_block(&sid, 1);
-            io_->send_block(&sid, 1);
             ot_ = std::make_unique<OTExt>(ALICE, io_, /*malicious=*/false);
-            ot_->set_sid(sid);
             bool db[128];
             const uint8_t* d = reinterpret_cast<const uint8_t*>(&delta_);
             for (int i = 0; i < 128; ++i) db[i] = (d[i / 8] >> (i % 8)) & 1;
@@ -90,9 +89,7 @@ public:
             io_->recv_block(constant_, 2);
             block tmp; io_->recv_block(&tmp, 1);
             mitccrh_.setS(tmp);
-            block sid; io_->recv_block(&sid, 1);
             ot_ = std::make_unique<OTExt>(BOB, io_, /*malicious=*/false);
-            ot_->set_sid(sid);
             block seed; io_->recv_block(&seed, 1);
             shared_prg_.reseed(&seed);
         }
