@@ -165,7 +165,7 @@ private:
     IOChannel* io_;
     block constant_[2];
     block delta_{};                       // meaningful for ALICE (the garbler)
-    MITCCRH<8> mitccrh_;
+    MITCCRH<> mitccrh_;
     std::unique_ptr<OTExt> ot_;
     PRG shared_prg_;
     std::unique_ptr<block[]> buf_;
