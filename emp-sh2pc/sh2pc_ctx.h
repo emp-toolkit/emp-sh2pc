@@ -51,7 +51,7 @@ private:
     // Bind to the owning session's protocol primitives. party / io / delta /
     // constant are fixed once (after the session handshake) and copied by value;
     // mitccrh is shared by pointer (the session owns it, gid advances per AND).
-    void bind_(int party, IOChannel* io, block delta, const block constant[2], MITCCRH<8>* mitccrh) {
+    void bind_(int party, IOChannel* io, block delta, const block constant[2], MITCCRH<>* mitccrh) {
         party_ = party;
         io_ = io;
         delta_ = delta;
@@ -64,7 +64,7 @@ private:
     IOChannel* io_ = nullptr;
     block delta_{};               // meaningful for ALICE (the garbler)
     block constant_[2]{};         // public-constant labels (false, true)
-    MITCCRH<8>* mitccrh_ = nullptr;
+    MITCCRH<>* mitccrh_ = nullptr;
 };
 
 static_assert(BooleanContext<SH2PCCtx>);
