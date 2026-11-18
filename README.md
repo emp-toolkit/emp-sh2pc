@@ -125,8 +125,10 @@ wrapper script.
   `./run ./build/[binary]`
 
   e.g. `./run ./build/test_bit` or `./run ./build/test_example`.
-  `run` forwards only the party id, so a per-party integer (as
-  `test_example` takes) needs the direct invocation shown below.
+  `run` passes the same extra arguments to both parties, so a per-party
+  integer (as `test_example` takes) needs the direct invocation shown
+  below. It fails if either party fails, and stops both after
+  `EMP_RUN_TIMEOUT` seconds (default 120).
 
 * Two machines: the shared port is `$EMP_PORT` (default 12345) and party 2
   dials `$EMP_PEER_IP`; only the party id is a positional arg:
